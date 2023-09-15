@@ -1,0 +1,8 @@
+torch
+torchvision
+torchaudio
+diffusers
+git+https://github.com/eaidova/optimum-intel.git@ea/pt_fe
+git+https://github.com/openvinotoolkit/nncf.git
+openvino==2023.1.0.dev20230811
+onnx
