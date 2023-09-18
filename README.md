@@ -1,4 +1,4 @@
-# OV_SD_CPP
+![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/febef5d5-1473-45c5-8758-274761412a7b)# OV_SD_CPP
 C++ pipeline with OpenVINO native API for Stable Diffusion v1.5 with LMS Discrete Scheduler
 
 ## Step 1: Prepare environment
@@ -39,10 +39,22 @@ Lora enabling with safetensors, refer [this blog](https://blog.openvino.ai/blog-
 SD model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) and Lora [soulcard](https://civitai.com/models/67927?modelVersionId=72591) are tested in this pipeline
 
 * Tokenzier model:
+  
+1. The script convert_sd_tokenizer.py in the scripts dir could serialize the tokenizer model IR
 
-Employed via the built OpenVINO [custom extension](https://github.com/openvinotoolkit/openvino_contrib/tree/master/modules/custom_operations) ( new feature still in experiments )
+2. Build OV extension:
+ 
+```git clone https://github.com/apaniukov/openvino_contrib/  -b tokenizer-fix-decode```
 
-Tokenizer Model IR and extension are provided in this repo
+Refer to PR OpenVINO [custom extension](https://github.com/openvinotoolkit/openvino_contrib/pull/687) ( new feature still in experiments )
+
+3. read model with extension in the SD pipeline 
+
+Notice:
+
+Tokenizer Model IR and built extension file are provided in this repo
+
+![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/bac14f96-69c9-4ec4-b694-21a62a3176f4)
 
 ## Step 3: Build Pipeline
 
