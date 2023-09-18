@@ -34,7 +34,7 @@ python -m convert_model.py -b 1 -t <INT8|FP16|FP32> -sd Path_to_your_SD_model
 ```
 Notice: Now the pipeline support batch size = 1 only
 
-Lora enabling with safetensors, refer [this blog](https://github.com/FionaZZ92/OpenVINO_sample/tree/master/SD_controlnet) 
+Lora enabling with safetensors, refer [this blog](https://blog.openvino.ai/blog-posts/enable-lora-weights-with-stable-diffusion-controlnet-pipeline) 
 
 SD model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) and Lora [soulcard](https://civitai.com/models/67927?modelVersionId=72591) are tested in this pipeline
 
@@ -65,17 +65,17 @@ Use the same OpenVINO environment as the tokenizer extension
 Usage:
   OV_SD_CPP [OPTION...]
 
-`- t, --text arg`     Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
-`-n, --negPrompt arg` Defaut negative prompt is empty with space (default: )
-`-s, --seed arg`      Number of random seed to generate latent (default: 42)
-`-d, --debugLogger`   Generate logging into log.txt for debug
-`-e, --useOVExtension`Use OpenVINO extension for tokenizer
-`-r, --readNPLatent`  Read numpy generated latents from file
-`-m, --modelPath arg` Specify path of SD model IR (default: /home/openvino/fiona/SD/SD_ctrlnet/dreamlike-anime-1.0)
-`-p, --precision arg` Specify precision of SD model IR (default: FP16_static)
-`-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: /home/openvino/fiona/SD/Stable-Diffusion-NCNN/assets/lora/soulcard.safetensors)
-`-a, --alpha arg`     alpha for lora (default: 0.75)
-`-h, --help`          Print usage
+* `- t, --text arg`     Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
+* `-n, --negPrompt arg` Defaut negative prompt is empty with space (default: )
+* `-s, --seed arg`      Number of random seed to generate latent (default: 42)
+* `-d, --debugLogger`   Generate logging into log.txt for debug
+* `-e, --useOVExtension`Use OpenVINO extension for tokenizer
+* `-r, --readNPLatent`  Read numpy generated latents from file
+* `-m, --modelPath arg` Specify path of SD model IR (default: /home/openvino/fiona/SD/SD_ctrlnet/dreamlike-anime-1.0)
+* `-p, --precision arg` Specify precision of SD model IR (default: FP16_static)
+* `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: /home/openvino/fiona/SD/Stable-Diffusion-NCNN/assets/lora/soulcard.safetensors)
+* `-a, --alpha arg`     alpha for lora (default: 0.75)
+* `-h, --help`          Print usage
 
 Example:
 
