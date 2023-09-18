@@ -96,24 +96,28 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 * Generate the debug logging into log.txt: ` ./SD-generate -d`
 
 ## Benchmark:
+The performance and image quality of C++ pipeline are aligned with Python
+
 To align the performance with [Python SD pipeline](https://github.com/FionaZZ92/OpenVINO_sample/tree/master/SD_controlnet),
 C++ pipeline will print the duration of each model inferencing only
 
 For the diffusion part, the duration is for all the steps of Unet inferencing, which is the bottleneck
 
-For the generation quality, be careful with the negative prompt
+For the generation quality, be careful with the negative prompt and random latent generation
 
-## TODO:
+## Limitation:
+* Pipeline features:
+```shell
+- Batch size 1
+- LMS Discrete Scheduler
+- Text to image
+- CPU
+```
 * Program optimization:
 now parallel optimization with std::for_each only and add_compile_options(-O3 -march=native -Wall) with CMake
-* Modularization to reduce complexity:
-stable_diffusion.hpp 
-* Migration to Windows
-
-## Known issues:
-* INT8 model IR not improve the performance  
+* The pipeline with INT8 model IR not improve the performance  
 * Lora enabling only for FP16
-* C++ random with MT19937 results is differ from numpy.random.randn(). Hence, please use `-r, --readNPLatent` for the alignment with Python 
+* Random generation fails to align, C++ random with MT19937 results is differ from numpy.random.randn(). Hence, please use `-r, --readNPLatent` for the alignment with Python 
 * OV extension tokenizer cannot recognize the special character, like “.”, ”,”, “”, etc. When write prompt, need to use space to split words, and cannot accept empty negative prompt.
 So use default tokenizer without config `-e, --useOVExtension`, when negative prompt is empty
   
