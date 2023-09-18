@@ -1,4 +1,4 @@
-![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/febef5d5-1473-45c5-8758-274761412a7b)# OV_SD_CPP
+# OV_SD_CPP
 C++ pipeline with OpenVINO native API for Stable Diffusion v1.5 with LMS Discrete Scheduler
 
 ## Step 1: Prepare environment
