@@ -500,7 +500,7 @@ std::vector<std::pair<std::string, float>> parse_prompt_attention( std::string& 
             round_brackets.pop();
         }
 
-        else if ( text == "]" and square_brackets.size() > 0 )
+        else if ( text == "]" && square_brackets.size() > 0 )
         {
             for ( unsigned long p = square_brackets.top(); p < res.size(); p++ )
             {
@@ -609,8 +609,8 @@ std::vector<std::vector<int32_t>> tokenizer_infer_function( ov::CompiledModel& t
 
 	unsigned long total_byte_length = 4+4+4+prompt.length();
 	//unsigned char bytes[total_byte_length];
-	uint8_t bytes[total_byte_length];
-	StringToByteArray(prompt, bytes, batch_size, offset, length);
+    std::vector<uint8_t> bytes_vec(total_byte_length);
+	StringToByteArray_vec(prompt, bytes, batch_size, offset, length);
 	//std::string str = ByteArrayToString(bytes+4+4+4, length);
 	//std::cout << "str: " << str << "\n";
 
