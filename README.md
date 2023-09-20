@@ -38,7 +38,7 @@ Lora enabling with safetensors, refer [this blog](https://blog.openvino.ai/blog-
 
 SD model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) and Lora [soulcard](https://civitai.com/models/67927?modelVersionId=72591) are tested in this pipeline
 
-* Tokenzier model:
+* Tokenizer model:
   
 1. The script convert_sd_tokenizer.py in the scripts dir could serialize the tokenizer model IR
 
