@@ -610,7 +610,7 @@ std::vector<std::vector<int32_t>> tokenizer_infer_function( ov::CompiledModel& t
 	unsigned long total_byte_length = 4+4+4+prompt.length();
 	//unsigned char bytes[total_byte_length];
     std::vector<uint8_t> bytes_vec(total_byte_length);
-	StringToByteArray_vec(prompt, bytes, batch_size, offset, length);
+	StringToByteArray_vec(prompt, bytes_vec, batch_size, offset, length);
 	//std::string str = ByteArrayToString(bytes+4+4+4, length);
 	//std::cout << "str: " << str << "\n";
 
@@ -622,7 +622,7 @@ std::vector<std::vector<int32_t>> tokenizer_infer_function( ov::CompiledModel& t
 
 	ov::Tensor input_tensor(tokenizer_encoder_input_port.get_element_type(),
                             {total_byte_length}, 
-                            bytes);
+                            bytes_vec.data());
 	
 	// Set input tensor for model with one input
 	tokenizer_encoder_infer_request.set_input_tensor(input_tensor);
@@ -816,7 +816,7 @@ std::vector<float> prompt_function( ov::CompiledModel& text_encoder_compiled_mod
 }
 
 
-std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& device, std::string& precision, std::map<std::string,float>& lora_models){
+std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& device, std::string& precision, std::map<std::string,float>& lora_models, bool use_ov_extension){
 
     ov::Core core; 
     std::vector<ov::CompiledModel> SD_compiled_models;
@@ -847,13 +847,16 @@ std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& dev
     ov::CompiledModel decoder_compiled_model = core.compile_model(decoder_model, device);
     SD_compiled_models.push_back(decoder_compiled_model);
 
-    std::string tokenizer_encoder_model_path = "../models/tokenizer/tokenizer_encoder.xml";
-	std::string extention_path = "../extensions/libuser_ov_extensions.so";
-    std::cout << "Initialize SDTokenizer Model from path: " << tokenizer_encoder_model_path << std::endl;
-    std::cout << "Load OpenVINO Extension for Tokenzier from path: " << extention_path << "\n";
-    core.add_extension(extention_path.c_str());
-    ov::CompiledModel compiled_tokenizer_encoder = core.compile_model(tokenizer_encoder_model_path.c_str(), "CPU");
-    SD_compiled_models.push_back(compiled_tokenizer_encoder);
+   if (use_ov_extension){
+        std::string tokenizer_encoder_model_path = "../models/tokenizer/tokenizer_encoder.xml";
+        std::string extention_path = "../extensions/libuser_ov_extensions.so";
+        std::cout << "Initialize SDTokenizer Model from path: " << tokenizer_encoder_model_path << std::endl;
+        std::cout << "Load OpenVINO Extension for Tokenzier from path: " << extention_path << "\n";
+        core.add_extension(extention_path.c_str());
+        ov::CompiledModel compiled_tokenizer_encoder = core.compile_model(tokenizer_encoder_model_path.c_str(), "CPU");
+        SD_compiled_models.push_back(compiled_tokenizer_encoder);
+   }
+
 
     return SD_compiled_models;
 }
@@ -906,7 +909,7 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
     lora_models.insert(std::pair<std::string,float>(lora_path, alpha));
 
     auto start_SDinit = std::chrono::steady_clock::now();
-    std::vector<ov::CompiledModel> SD_models = SD_init(model_path, device, precision, lora_models);
+    std::vector<ov::CompiledModel> SD_models = SD_init(model_path, device, precision, lora_models, use_ov_extension);
     auto end_SDinit = std::chrono::steady_clock::now();
     auto duration_SDinit = std::chrono::duration_cast<std::chrono::duration<float>>(end_SDinit - start_SDinit);
 
