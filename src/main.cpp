@@ -10,6 +10,8 @@ int32_t main(int32_t argc, char *argv[]) {
         ("t,text", "Initial positive prompt for SD ", cxxopts::value<std::string>()->default_value("cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting"))
         ("n,negPrompt", "Defaut negative prompt is empty with space", cxxopts::value<std::string>()->default_value(" "))
         ("s,seed", "Number of random seed to generate latent", cxxopts::value<size_t>()->default_value("42"))
+        ("height", "height", cxxopts::value<size_t>()->default_value("512"))
+        ("width", "width", cxxopts::value<size_t>()->default_value("512"))
         ("d,debugLogger", "generate logging into log.txt for debug", cxxopts::value<bool>()->default_value("false"))
         ("e,useOVExtension", "use OpenVINO extension for tokenizer", cxxopts::value<bool>()->default_value("false"))
         ("r,readNPLatent", "read numpy generated latents from file", cxxopts::value<bool>()->default_value("false"))
@@ -38,6 +40,8 @@ int32_t main(int32_t argc, char *argv[]) {
     const std::string negative_prompt = result["negPrompt"].as<std::string>();
     
     uint32_t seed = result["seed"].as<size_t>();
+    uint32_t height = result["height"].as<size_t>();
+    uint32_t width = result["width"].as<size_t>();
     const bool use_logger = result["debugLogger"].as<bool>();
     const bool use_OV_extension = result["useOVExtension"].as<bool>();
     const bool read_NP_latent = result["readNPLatent"].as<bool>();
@@ -56,7 +60,7 @@ int32_t main(int32_t argc, char *argv[]) {
 
     std::string output_png_path = std::string{"./result_"} + std::to_string( seed ) + std::string{".png"};
     auto start_total = std::chrono::steady_clock::now();
-    stable_diffusion( positive_prompt, output_png_path, 20, seed, negative_prompt, use_logger, model_path, precision, lora_path, alpha, use_OV_extension, read_NP_latent);
+    stable_diffusion( positive_prompt, output_png_path, 20, seed, height, width, negative_prompt, use_logger, model_path, precision, lora_path, alpha, use_OV_extension, read_NP_latent);
     auto end_total = std::chrono::steady_clock::now();
     auto duration_total = std::chrono::duration_cast<std::chrono::duration<float>>(end_total - start_total);
     return 0;
