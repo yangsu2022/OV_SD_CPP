@@ -71,7 +71,7 @@ Use the same OpenVINO environment as the tokenizer extension
 
 ## Step 4: Run Pipeline
 ```shell
- ./SD-generate -t <text> -n <negPrompt> -s <seed> -d <debugLogger> -e <useOVExtension> -r <readNPLatent> -m <modelPath> -p <precision> -l <lora.safetensors> -a <alpha> -h <help>
+ ./SD-generate -t <text> -n <negPrompt> -s <seed> --height <output image> --width <output image> -d <debugLogger> -e <useOVExtension> -r <readNPLatent> -m <modelPath> -p <precision> -l <lora.safetensors> -a <alpha> -h <help>
 ```
 
 Usage:
@@ -80,6 +80,8 @@ Usage:
 * `- t, --text arg`     Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
 * `-n, --negPrompt arg` Defaut negative prompt is empty with space (default: )
 * `-s, --seed arg`      Number of random seed to generate latent (default: 42)
+* `--height arg`        Height of output image (default: 512)
+* `--width arg`         Width of output image (default: 512)
 * `-d, --debugLogger`   Generate logging into log.txt for debug
 * `-e, --useOVExtension`Use OpenVINO extension for tokenizer
 * `-r, --readNPLatent`  Read numpy generated latents from file
@@ -133,3 +135,33 @@ now parallel optimization with std::for_each only and add_compile_options(-O3 -m
 * OV extension tokenizer cannot recognize the special character, like “.”, ”,”, “”, etc. When write prompt, need to use space to split words, and cannot accept empty negative prompt.
 So use default tokenizer without config `-e, --useOVExtension`, when negative prompt is empty
   
+## Setup in Windows 10 with VS2019:
+1. Python env: Setup Conda env SD-CPP with the anaconda prompt terminal
+2. C++ dependencies:
+* OpenVINO and OpenCV:
+
+Download and setup Environment Variable: add the path of bin and lib
+(System Properties -> System Properties -> Environment Variables -> System variables -> Path )
+* Boost:
+```shell
+1. Download from https://sourceforge.net/projects/boost/files/boost-binaries/1.83.0/
+2. Unzip
+3. Setup: bootstrap.bat 
+4. Build: b2.exe
+5. Install: b2.exe install
+```
+Installed boost in the path C:/Boost, add CMakeList with `SET(BOOST_ROOT"C:/Boost")`
+3. Setup of conda env SD-CPP and Setup OpenVINO with setupvars.bat
+4. CMake with build.bat like:
+```shell
+rmdir /Q /S build
+mkdir build
+cd build
+cmake -G "Visual Studio 16 2019" -A x64 ^
+ -DCMAKE_BUILD_TYPE=Release ^
+      ..
+cmake --build . --config Release
+cd ..
+```
+5. Setup of Visual Studio with release and x64, and build: open .sln file in the build Dir
+6. Run the `SD_generate.exe`
