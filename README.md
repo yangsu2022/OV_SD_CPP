@@ -6,7 +6,7 @@ C++ pipeline loads the Lora safetensors via Pybind
 ```shell
 conda create -n SD-CPP python==3.10
 conda activate SD-CPP
-conda pip install numpy safetensors pybind11
+conda install numpy safetensors pybind11
 ```
 C++ Packages:
 * OpenVINO:
@@ -77,16 +77,18 @@ Use the same OpenVINO environment as the tokenizer extension
 Usage:
   OV_SD_CPP [OPTION...]
 
-* `- t, --text arg`     Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
-* `-n, --negPrompt arg` Defaut negative prompt is empty with space (default: )
+* `-p, --posPrompt arg`     Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
+* `-n, --negPrompt arg` Default is empty with space (default: )
+* `-d, --device arg` AUTO, CPU, or GPU (default: CPU)
 * `-s, --seed arg`      Number of random seed to generate latent (default: 42)
 * `--height arg`        Height of output image (default: 512)
 * `--width arg`         Width of output image (default: 512)
-* `-d, --debugLogger`   Generate logging into log.txt for debug
+* `--log arg`           Generate logging into log.txt for debug
+* `-c, --useCache`      Use model caching
 * `-e, --useOVExtension`Use OpenVINO extension for tokenizer
 * `-r, --readNPLatent`  Read numpy generated latents from file
 * `-m, --modelPath arg` Specify path of SD model IR (default: /home/openvino/fiona/SD/SD_ctrlnet/dreamlike-anime-1.0)
-* `-p, --precision arg` Specify precision of SD model IR (default: FP16_static)
+* `-t, --type arg`      Specify the type of SD model IR (FP16_static or FP16_dyn) (default: FP16_static)
 * `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: /home/openvino/fiona/SD/Stable-Diffusion-NCNN/assets/lora/soulcard.safetensors)
 * `-a, --alpha arg`     alpha for lora (default: 0.75)
 * `-h, --help`          Print usage
@@ -107,7 +109,7 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
-* Generate the debug logging into log.txt: ` ./SD-generate -d`
+* Generate the debug logging into log.txt: ` ./SD-generate --log`
 
 ## Benchmark:
 The performance and image quality of C++ pipeline are aligned with Python
@@ -131,7 +133,7 @@ For the generation quality, be careful with the negative prompt and random laten
 now parallel optimization with std::for_each only and add_compile_options(-O3 -march=native -Wall) with CMake
 * The pipeline with INT8 model IR not improve the performance  
 * Lora enabling only for FP16
-* Random generation fails to align, C++ random with MT19937 results is differ from numpy.random.randn(). Hence, please use `-r, --readNPLatent` for the alignment with Python 
+* Random generation fails to align, C++ random with MT19937 results is differ from numpy.random.randn(). Hence, please use `-r, --readNPLatent` for the alignment with Python(this latent file is for output image 512X512 only) 
 * OV extension tokenizer cannot recognize the special character, like “.”, ”,”, “”, etc. When write prompt, need to use space to split words, and cannot accept empty negative prompt.
 So use default tokenizer without config `-e, --useOVExtension`, when negative prompt is empty
   

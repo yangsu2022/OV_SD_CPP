@@ -332,7 +332,7 @@ std::vector<float> diffusion_function( ov::CompiledModel& unet_compiled_model, u
 
     // tqdm bar;
     
-    for ( int32_t i = 0; i < static_cast<int>(sigma.size()) - 1; i++ )
+    for ( int32_t i = 0; i < step; i++ )
     {
         // bar.progress(i, sigma.size());
         
@@ -818,14 +818,19 @@ std::vector<float> prompt_function( ov::CompiledModel& text_encoder_compiled_mod
 }
 
 
-std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& device, std::string& precision, std::map<std::string,float>& lora_models, bool use_ov_extension){
+std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& device, std::string& type, std::map<std::string,float>& lora_models, bool use_ov_extension, bool use_cache){
 
     ov::Core core; 
+    
+    if (use_cache) {
+        core.set_property(ov::cache_dir("./cache_dir")); 
+    }
+
     std::vector<ov::CompiledModel> SD_compiled_models;
     
-    std::shared_ptr<ov::Model> text_encoder_model = core.read_model((model_path+"/"+precision+"/text_encoder/openvino_model.xml").c_str());
-    std::shared_ptr<ov::Model> unet_model = core.read_model((model_path+"/"+precision+"/unet/openvino_model.xml").c_str());
-    std::shared_ptr<ov::Model> decoder_model = core.read_model((model_path+"/"+precision+"/vae_decoder/openvino_model.xml").c_str());  
+    std::shared_ptr<ov::Model> text_encoder_model = core.read_model((model_path+"/"+type+"/text_encoder/openvino_model.xml").c_str());
+    std::shared_ptr<ov::Model> unet_model = core.read_model((model_path+"/"+type+"/unet/openvino_model.xml").c_str());
+    std::shared_ptr<ov::Model> decoder_model = core.read_model((model_path+"/"+type+"/vae_decoder/openvino_model.xml").c_str());  
 
     if (!lora_models.empty()){
         std::vector<ov::CompiledModel> compiled_lora_models = load_lora_weights(core, text_encoder_model, unet_model, device, lora_models);
@@ -855,7 +860,7 @@ std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& dev
         std::cout << "Initialize SDTokenizer Model from path: " << tokenizer_encoder_model_path << std::endl;
         std::cout << "Load OpenVINO Extension for Tokenzier from path: " << extention_path << "\n";
         core.add_extension(extention_path.c_str());
-        ov::CompiledModel compiled_tokenizer_encoder = core.compile_model(tokenizer_encoder_model_path.c_str(), "CPU");
+        ov::CompiledModel compiled_tokenizer_encoder = core.compile_model(tokenizer_encoder_model_path.c_str(), device);
         SD_compiled_models.push_back(compiled_tokenizer_encoder);
    }
 
@@ -864,8 +869,8 @@ std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& dev
 }
 
 
-void stable_diffusion( std::string positive_prompt = std::string{}, std::string output_png_path = std::string{}, int32_t step = 20, uint32_t seed = 42, uint32_t height = 512, uint32_t width = 512, std::string negative_prompt = std::string{}, 
-    bool use_logger = false, std::string model_path = std::string{}, std::string precision = std::string{}, std::string lora_path = std::string{}, float alpha = 0.75, bool use_ov_extension = false, 
+void stable_diffusion( std::string positive_prompt = std::string{}, std::string output_png_path = std::string{}, std::string device = std::string{}, int32_t step = 20, uint32_t seed = 42, uint32_t height = 512, uint32_t width = 512, std::string negative_prompt = std::string{}, 
+    bool use_logger = false, bool use_cache = false, std::string model_path = std::string{}, std::string type = std::string{}, std::string lora_path = std::string{}, float alpha = 0.75, bool use_ov_extension = false, 
     bool read_np_latent = false ){
 
     logger.setLoggingEnabled(use_logger);
@@ -880,47 +885,54 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
     
     logger.log_string(LogLevel::INFO, "----------------[start]------------------");
     logger.log_value(LogLevel::INFO, "positive_prompt: " ,positive_prompt);
-    logger.log_value(LogLevel::INFO, "output_png_path: ", output_png_path);
     logger.log_value(LogLevel::INFO, "negative_prompt: ", negative_prompt);
-    logger.log_value(LogLevel::INFO, "step: ", step);    
+    logger.log_value(LogLevel::INFO, "Device: ", device);
+    logger.log_value(LogLevel::INFO, "output_png_path: ", output_png_path);
     logger.log_value(LogLevel::INFO, "seed: ", seed); 
+    logger.log_value(LogLevel::INFO, "step: ", step);    
     logger.log_value(LogLevel::INFO, "height: ", height); 
     logger.log_value(LogLevel::INFO, "width: ", width); 
+    logger.log_value(LogLevel::INFO, "model_path: ", model_path);
+    logger.log_value(LogLevel::INFO, "type: ", type);
     logger.log_value(LogLevel::INFO, "lora_path: ", lora_path);
-    logger.log_value(LogLevel::INFO, "alpha: ", alpha); 
+    logger.log_value(LogLevel::INFO, "use_ov_extension: ", use_ov_extension); 
+    logger.log_value(LogLevel::INFO, "read_np_latent: ", read_np_latent); 
+    logger.log_value(LogLevel::INFO, "use_logger: ", use_logger); 
+    logger.log_value(LogLevel::INFO, "use_cache: ", use_cache); 
 
     std::cout << "----------------[start]------------------" << std::endl;
     
     std::cout << "openvino version: " << ov::get_openvino_version() << std::endl;
     std::cout << "positive_prompt: " << positive_prompt << std::endl;
     std::cout << "negative_prompt: " << negative_prompt << std::endl;
+    std::cout << "Device: " << device << std::endl;
+    std::cout << "output_png_path: " << output_png_path << std::endl;
     std::cout << "seed: " << seed << std::endl;
+    std::cout << "step: " << step << std::endl;
     std::cout << "height: " << height << std::endl;
     std::cout << "width: " << width << std::endl;
-    std::cout << "output_png_path: " << output_png_path << std::endl;
-    std::cout << "step: " << step << std::endl;
     std::cout << "model_path: " << model_path << std::endl;
-    std::cout << "precision: " << precision << std::endl;
+    std::cout << "type: " << type << std::endl;
     std::cout << "lora_path: " << lora_path << std::endl;
     std::cout << "alpha: " << alpha << std::endl;
     std::cout << std::boolalpha << "use_ov_extension: " << use_ov_extension << std::endl;
     std::cout  << std::boolalpha << "read_np_latent: " << read_np_latent << std::endl;
     std::cout << std::boolalpha << "use_logger: " << use_logger << std::endl;
+    std::cout << std::boolalpha << "use_cache: " << use_cache << std::endl;
 
     logger.log_string(LogLevel::INFO, "----------------[Model Init]------------------");
     std::cout << "----------------[Model Init]------------------" << std::endl;       
 
-    std::string device = "AUTO";
     std::map<std::string,float> lora_models;
     lora_models.insert(std::pair<std::string,float>(lora_path, alpha));
 
     auto start_SDinit = std::chrono::steady_clock::now();
-    std::vector<ov::CompiledModel> SD_models = SD_init(model_path, device, precision, lora_models, use_ov_extension);
+    std::vector<ov::CompiledModel> SD_models = SD_init(model_path, device, type, lora_models, use_ov_extension, use_cache);
     auto end_SDinit = std::chrono::steady_clock::now();
     auto duration_SDinit = std::chrono::duration_cast<std::chrono::duration<float>>(end_SDinit - start_SDinit);
 
     logger.log_value(LogLevel::DEBUG, "duration of SD_init(s): " , duration_SDinit.count());
-
+    
     std::vector<float> text_embeddings;
     if (use_ov_extension) {
         // OVTokenizer (WIP)
@@ -957,7 +969,7 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
 
     logger.log_string(LogLevel::INFO, "----------------[diffusion]------------------");
     std::cout << "----------------[diffusion]---------------" << std::endl;
-    auto start_diffusion = std::chrono::steady_clock::now();
+
 
     std::vector<float> latent_vector_1d;
     if (read_np_latent) {
@@ -967,10 +979,11 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
     }
     logger.log_vector(LogLevel::DEBUG, "randn output: ", latent_vector_1d, 0, 20);
 
+    auto start_diffusion = std::chrono::steady_clock::now();
     auto sample = diffusion_function( SD_models[1], seed, step, height, width, latent_vector_1d, text_embeddings );
     auto end_diffusion = std::chrono::steady_clock::now();
     auto duration_diffusion = std::chrono::duration_cast<std::chrono::duration<float>>(end_diffusion - start_diffusion);
-    std::cout << "duration (all " << step << " steps): " << duration_diffusion.count() << " s" << std::endl;
+    std::cout << "duration (all " << step << " steps): " << duration_diffusion.count() << " s, each step: " << duration_diffusion.count() / step << " s" << std::endl;
 
     logger.log_string(LogLevel::INFO, "----------------[decode]------------------");
     std::cout << "----------------[decode]------------------" << std::endl;
@@ -999,5 +1012,5 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
     std::cout << "----------------[close]-------------------" << std::endl;
 
     auto duration_total = std::chrono::duration_cast<std::chrono::duration<float>>(end_decode - end_SDinit);
-    std::cout << "duration of 4 infers: " << duration_total.count() << " s" << std::endl;
+    std::cout << "duration of one image generation without model compiling: " << duration_total.count() << " s" << std::endl;
 }
