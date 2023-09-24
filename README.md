@@ -9,8 +9,7 @@ conda activate SD-CPP
 conda install numpy safetensors pybind11
 ```
 C++ Packages:
-* OpenVINO:
-Tested with [OpenVINO 2023.1.0.dev20230811 pre-release](https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2023.1.0.dev20230811/)
+* OpenVINO: intall with `conda install -c conda-forge openvino=2023.1.0`
 * Boost: Install with `sudo apt-get install libboost-all-dev` for LMSDiscreteScheduler's integration
 * OpenCV: Install with `sudo apt install libopencv-dev` for image saving
 
