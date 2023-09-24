@@ -109,50 +109,17 @@ else
 fi
 
 
-# Prompt the user if they want to download OpenVINO
-read -p "Do you want to download OpenVINO Toolkit? (yes/no): " choice
+# Prompt the user if they want to install OpenVINO
+read -p "Do you want to install OpenVINO Toolkit 2023.1.0 (C++) with conda-forge? (yes/no): " choice
 
 if [ "$choice" = "yes" ]; then
-    # Check if '../download' folder exists
-    if [ ! -d "../download" ]; then
-        echo "Creating '../download' folder..."
-        mkdir ../download
-    fi
 
-    # Check if the file already exists in the 'download' folder
-    if [ -f "../download/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64.tgz" ]; then
-        echo "OpenVINO Toolkit package already exists in '../download' folder."
-    else
-        # Download OpenVINO Toolkit
-        echo "### If download too slow, stop and download manually and rerun this script to unzip"
-        echo "cd ../download && wget https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2023.1.0.dev20230811/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64.tgz"
-        echo
-        wget "https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2023.1.0.dev20230811/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64.tgz" -P "../download/"
-        if [ $? -eq 0 ]; then
-            echo "OpenVINO Toolkit downloaded successfully."
-        else
-            echo "Failed to download OpenVINO Toolkit, please download manually and rerun this script to unzip."
-            echo "cd ../download && wget https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2023.1.0.dev20230811/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64.tgz"
-            exit 1
-        fi
-    fi
+    conda install -c conda-forge openvino=2023.1.0 -y
 
-    # Extract the downloaded tgz file
-    echo "Extracting OpenVINO Toolkit..."
-    echo "### If get this: 'gzip: stdin: unexpected end of file', delete the incomplete tgz file and rerun this script"
-    tar zxf "../download/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64.tgz" -C "../download/"
-    
-    # Check if setupvars.sh exists in the extracted folder
-    if [ -f "../download/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64/setupvars.sh" ]; then
-        echo "OpenVINO Toolkit setupvars.sh found."
-    else
-        echo "setupvars.sh not found in the extracted folder. Please source it manually to activate OpenVINO environment."
-    fi
 else
-    echo "### OpenVINO download canceled. You can manually source setupvars.sh to activate OpenVINO environment."
+    echo "### OpenVINO 2023.1.0 install canceled. You can manually activate your OpenVINO environment."
 fi
 
 echo "### Finished all the preparation"  
-echo "### Please activate the Python env manually with command 'conda activate SD-CPP'"
-echo "### And activate OpenVINO with commnad: source ../download/l_openvino_toolkit_ubuntu22_2023.1.0.dev20230811_x86_64/setupvars.sh" 
+echo "### Please activate the Python env and OpenVINO manually with command 'conda activate SD-CPP'"
 echo "### Then build the pipeline with CMake following the README's guide"

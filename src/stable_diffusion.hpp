@@ -277,7 +277,7 @@ std::vector<float> np_randn_function( ) {
     // read np generated latents with defaut seed 42
     std::vector<float> latent_vector_1d;
     std::ifstream latent_copy_file;
-    latent_copy_file.open( "../scripts/np_latents.txt");
+    latent_copy_file.open( "../scripts/np_latents_512x512.txt");
     std::vector<std::string> latent_vector_new;
     if (latent_copy_file.is_open())
     {
@@ -286,7 +286,7 @@ std::vector<float> np_randn_function( ) {
             latent_vector_new.push_back(word);
         latent_copy_file.close();
     } else {
-        std::cout << "could not find the np_latents.txt" << std::endl;
+        std::cout << "could not find the np_latents_512x512.txt" << std::endl;
         exit(0);
     }
 
