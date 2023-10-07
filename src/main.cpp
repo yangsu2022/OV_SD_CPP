@@ -17,9 +17,9 @@ int32_t main(int32_t argc, char *argv[]) {
         ("c,useCache", "use model caching", cxxopts::value<bool>()->default_value("false"))
         ("e,useOVExtension", "use OpenVINO extension for tokenizer", cxxopts::value<bool>()->default_value("false"))
         ("r,readNPLatent", "read numpy generated latents from file", cxxopts::value<bool>()->default_value("false"))
-        ("m,modelPath", "Specify path of SD model IR", cxxopts::value<std::string>()->default_value("/home/openvino/fiona/SD/SD_ctrlnet/dreamlike-anime-1.0"))
+        ("m,modelPath", "Specify path of SD model IR", cxxopts::value<std::string>()->default_value("../models/dreamlike-anime-1.0"))
         ("t,type", "Specify the type of SD model IR(FP16_static or FP16_dyn)", cxxopts::value<std::string>()->default_value("FP16_static"))
-        ("l,loraPath", "Specify path of lora file. (*.safetensors).", cxxopts::value<std::string>()->default_value("/home/openvino/fiona/SD/Stable-Diffusion-NCNN/assets/lora/soulcard.safetensors"))
+        ("l,loraPath", "Specify path of lora file. (*.safetensors).", cxxopts::value<std::string>()->default_value("../models/soulcard.safetensors"))
         ("a,alpha", "alpha for lora", cxxopts::value<float>()->default_value("0.75"))
         ("h,help", "Print usage")
     ;

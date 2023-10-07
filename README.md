@@ -138,7 +138,9 @@ So use default tokenizer without config `-e, --useOVExtension`, when negative pr
   
 ## Setup in Windows 10 with VS2019:
 1. Python env: Setup Conda env SD-CPP with the anaconda prompt terminal
+
 2. C++ dependencies:
+
 * OpenVINO and OpenCV:
 
 Download and setup Environment Variable: add the path of bin and lib
@@ -152,8 +154,11 @@ Download and setup Environment Variable: add the path of bin and lib
 5. Install: b2.exe install
 ```
 Installed boost in the path C:/Boost, add CMakeList with `SET(BOOST_ROOT"C:/Boost")`
+
 3. Setup of conda env SD-CPP and Setup OpenVINO with setupvars.bat
+
 4. CMake with build.bat like:
+
 ```shell
 rmdir /Q /S build
 mkdir build
@@ -162,7 +167,10 @@ cmake -G "Visual Studio 16 2019" -A x64 ^
  -DCMAKE_BUILD_TYPE=Release ^
       ..
 cmake --build . --config Release
-cd ..
 ```
-5. Setup of Visual Studio with release and x64, and build: open .sln file in the build Dir
-6. Run the `SD_generate.exe`
+
+5. Setup of Visual Studio with release and x64, and build: open .sln file in the build Dir 
+
+6. Put `soulcard.safetensors` and the converted model IR(like FP16_static) of `dreamlike-anime-1.0` into the `models` folder
+
+7. Run the `.\Release\SD-generate.exe -l ''` or `.\Release\SD-generate.exe` in the `build` folder in the anaconda prompt, or debug within VS
