@@ -86,9 +86,9 @@ Usage:
 * `-c, --useCache`      Use model caching
 * `-e, --useOVExtension`Use OpenVINO extension for tokenizer
 * `-r, --readNPLatent`  Read numpy generated latents from file
-* `-m, --modelPath arg` Specify path of SD model IR (default: /home/openvino/fiona/SD/SD_ctrlnet/dreamlike-anime-1.0)
+* `-m, --modelPath arg` Specify path of SD model IR (default: ../models/dreamlike-anime-1.0)
 * `-t, --type arg`      Specify the type of SD model IR (FP16_static or FP16_dyn) (default: FP16_static)
-* `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: /home/openvino/fiona/SD/Stable-Diffusion-NCNN/assets/lora/soulcard.safetensors)
+* `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: ../models/soulcard.safetensors)
 * `-a, --alpha arg`     alpha for lora (default: 0.75)
 * `-h, --help`          Print usage
 
