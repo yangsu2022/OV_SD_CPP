@@ -108,6 +108,9 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
 * Generate the debug logging into log.txt: ` ./SD-generate --log`
+* Generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
+
+![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/9bd58b64-6688-417e-b435-c0991247b97b)
 
 ## Benchmark:
 The performance and image quality of C++ pipeline are aligned with Python
@@ -170,7 +173,6 @@ cmake --build . --config Release
 5. Put `soulcard.safetensors` and the converted model IR(like `FP16_static`) of `dreamlike-anime-1.0` into the `models` folder
 
 6. Run with Anaconda prompt: must in the `build` path
- `.\Release\SD-generate.exe -l ''`
- `.\Release\SD-generate.exe` 
+ `.\Release\SD-generate.exe -l ''` or `.\Release\SD-generate.exe` 
 
 7. Debug within Visual Studio(open .sln file in the `build` folder)
