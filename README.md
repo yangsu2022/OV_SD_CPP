@@ -24,9 +24,9 @@ chmod +x build_dependencies.sh
 ## Step 2: Prepare SD model and Tokenizer model
 * SD v1.5 model:
 
-Refer [this link](https://github.com/intel-innersource/frameworks.ai.openvino.llm.bench/blob/main/public/convert.py#L124-L184) to generate SD v1.5 model, reshape to (1,3,512,512) for best performance.
+Refer [this link](https://github.com/intel-innersource/frameworks.ai.openvino.llm.bench/blob/main/public/convert.py#L124-L184) to generate SD v1.5 model, reshape to static model (1,3,512,512) for best performance or dynamic model. 
 
-With downloaded models, the model conversion from PyTorch model to OpenVINO IR could be done with script convert_model.py in the scripts directory 
+With downloaded models, the model conversion from PyTorch model to OpenVINO IR could be done with script convert_model.py in the scripts directory. Please convert the model into `FP16_static` or `FP16_dyn` 
 
 ```shell
 python -m convert_model.py -b 1 -t <INT8|FP16|FP32> -sd Path_to_your_SD_model
@@ -47,7 +47,7 @@ SD model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-an
 
 Refer to PR OpenVINO [custom extension](https://github.com/openvinotoolkit/openvino_contrib/pull/687) ( new feature still in experiments )
 
-3. read model with extension in the SD pipeline 
+3. Read model with extension in the SD pipeline 
 
 Notice:
 
@@ -58,7 +58,6 @@ Tokenizer Model IR and built extension file are provided in this repo
 ## Step 3: Build Pipeline
 
 ```shell
-source /Path_to_your_OpenVINO_package/setupvars.sh
 conda activate SD-CPP
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -113,8 +112,7 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 ## Benchmark:
 The performance and image quality of C++ pipeline are aligned with Python
 
-To align the performance with [Python SD pipeline](https://github.com/FionaZZ92/OpenVINO_sample/tree/master/SD_controlnet),
-C++ pipeline will print the duration of each model inferencing only
+To align the performance with [Python SD pipeline](https://github.com/FionaZZ92/OpenVINO_sample/tree/master/SD_controlnet), C++ pipeline will print the duration of each model inferencing only
 
 For the diffusion part, the duration is for all the steps of Unet inferencing, which is the bottleneck
 
@@ -169,8 +167,10 @@ cmake -G "Visual Studio 16 2019" -A x64 ^
 cmake --build . --config Release
 ```
 
-5. Setup of Visual Studio with release and x64, and build: open .sln file in the build Dir 
+5. Put `soulcard.safetensors` and the converted model IR(like `FP16_static`) of `dreamlike-anime-1.0` into the `models` folder
 
-6. Put `soulcard.safetensors` and the converted model IR(like FP16_static) of `dreamlike-anime-1.0` into the `models` folder
+6. Run with Anaconda prompt: must in the `build` path
+ `.\Release\SD-generate.exe -l ''`
+ `.\Release\SD-generate.exe` 
 
-7. Run the `.\Release\SD-generate.exe -l ''` or `.\Release\SD-generate.exe` in the `build` folder in the anaconda prompt, or debug within VS
+7. Debug within Visual Studio(open .sln file in the `build` folder)

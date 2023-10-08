@@ -18,7 +18,7 @@
 #include <openvino/openvino.hpp>
 #include <boost/math/quadrature/trapezoidal.hpp>
 #include "lora.hpp"
-// #include "tqdm.hpp"
+#include "tqdm.hpp"
 #include <utils.hpp>
 #include "logger.hpp"
 #include <filesystem>
@@ -330,11 +330,11 @@ std::vector<float> diffusion_function( ov::CompiledModel& unet_compiled_model, u
  
     std::vector<std::vector<float>> derivative_list;
 
-    // tqdm bar;
+    tqdm bar(sigma.size());
     
     for ( int32_t i = 0; i < step; i++ )
     {
-        // bar.progress(i, sigma.size());
+        bar.progress(i);
         
         logger.log_string(LogLevel::DEBUG, "------------------------------------");
         logger.log_value(LogLevel::DEBUG, "step: ", i);
@@ -441,7 +441,7 @@ std::vector<float> diffusion_function( ov::CompiledModel& unet_compiled_model, u
         logger.log_value(LogLevel::DEBUG, "duration of unet post integration(s): " , duration_post.count());
         logger.log_vector(LogLevel::DEBUG, "Debug-latent_vector_1d_new: ", latent_vector_1d_new, 0, 5);
     }
-    // bar.finish();
+    bar.finish();
     return latent_vector_1d_new; 
 }
 
