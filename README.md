@@ -156,7 +156,7 @@ Download and setup Environment Variable: add the path of bin and lib
 ```
 Installed boost in the path C:/Boost, add CMakeList with `SET(BOOST_ROOT"C:/Boost")`
 
-3. Setup of conda env SD-CPP and Setup OpenVINO with setupvars.bat
+3. Setup of conda env SD-CPP and install OpenVINO with conda-forge
 
 4. CMake with build.bat like:
 
