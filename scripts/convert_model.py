@@ -107,4 +107,7 @@ else:
     if not args.dynamic:
         model.reshape(args.batch,512,512,1)
     model.compile()
-    model.save_pretrained(str(Path(args.sd_weights) / args.type) + "_static")
+    if not args.dynamic:
+        model.save_pretrained(str(Path(args.sd_weights) / args.type) + "_static")
+    else:
+        model.save_pretrained(str(Path(args.sd_weights) / args.type) + "_dyn")
