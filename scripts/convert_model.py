@@ -111,4 +111,7 @@ else:
         model.save_pretrained(str(Path(args.sd_weights) / args.type) + "_static")
     else:
         model.save_pretrained(str(Path(args.sd_weights) / args.type) + "_dyn")
+<<<<<<< HEAD
         
+=======
+>>>>>>> bb9f9f89bb2de85e5d7a027c86856ec694f0d61e
