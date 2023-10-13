@@ -9,7 +9,7 @@ find_package(OpenCV REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package( Boost REQUIRED )
 include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${BOOST_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(SD-generate ${PROJECT_SOURCE_DIR}/src/main.cpp)
