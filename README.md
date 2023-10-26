@@ -2,12 +2,7 @@
 C++ pipeline with OpenVINO native API for Stable Diffusion v1.5 with LMS Discrete Scheduler
 
 ## Step 1: Prepare environment
-C++ pipeline loads the Lora safetensors via Pybind
-```shell
-conda create -n SD-CPP python==3.10
-conda activate SD-CPP
-conda install numpy safetensors pybind11
-```
+
 C++ Packages:
 * OpenVINO: intall with `conda install -c conda-forge openvino=2023.1.0`
 * Boost: Install with `sudo apt-get install libboost-all-dev` for LMSDiscreteScheduler's integration
@@ -20,6 +15,7 @@ SD Preparation in two steps above could be auto implemented with build_dependenc
 chmod +x build_dependencies.sh
 ./build_dependencies.sh
 ```
+build_dependencies_old.sh provide the previous OpenVINO installation from [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/) without conda-forge 
 
 ## Step 2: Prepare SD model and Tokenizer model
 * SD v1.5 model:
@@ -33,7 +29,10 @@ python -m convert_model.py -b 1 -t <INT8|FP16|FP32> -sd Path_to_your_SD_model
 ```
 Notice: Now the pipeline support batch size = 1 only
 
-Lora enabling with safetensors, refer [this blog](https://blog.openvino.ai/blog-posts/enable-lora-weights-with-stable-diffusion-controlnet-pipeline) 
+* Lora enabling with safetensors
+
+Refer [this blog for python pipeline](https://blog.openvino.ai/blog-posts/enable-lora-weights-with-stable-diffusion-controlnet-pipeline), here the C++ implementation includes: 
+the safetensor model is loaded with file [src/safetensors.h](https://github.com/hsnyder/safetensors.h), layer name and weight are modified with `Eigen Lib` and inserted into the SD model with `ov::pass::MatcherPass` in the file `src/lora_cpp.hpp` 
 
 SD model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) and Lora [soulcard](https://civitai.com/models/67927?modelVersionId=72591) are tested in this pipeline
 
@@ -127,7 +126,6 @@ For the generation quality, be careful with the negative prompt and random laten
 - Batch size 1
 - LMS Discrete Scheduler
 - Text to image
-- CPU
 ```
 * Program optimization:
 now parallel optimization with std::for_each only and add_compile_options(-O3 -march=native -Wall) with CMake
@@ -138,12 +136,13 @@ now parallel optimization with std::for_each only and add_compile_options(-O3 -m
 So use default tokenizer without config `-e, --useOVExtension`, when negative prompt is empty
   
 ## Setup in Windows 10 with VS2019:
-1. Python env: Setup Conda env SD-CPP with the anaconda prompt terminal
+1. Download [Anaconda3](https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Windows-x86_64.exe) and setup Conda env SD-CPP for OpenVINO with conda-forge and use the anaconda prompt terminal for CMake
 
 2. C++ dependencies:
-
-* OpenVINO and OpenCV:
-
+* OpenVINO:
+To test this pipeline: Install via Conda `conda install -c conda-forge openvino=2023.1.0`
+To deployment without conda: [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/), unzip and setup environment vars with setupvars.bat
+* OpenCV:
 Download and setup Environment Variable: add the path of bin and lib
 (System Properties -> System Properties -> Environment Variables -> System variables -> Path )
 * Boost:
@@ -155,10 +154,16 @@ Download and setup Environment Variable: add the path of bin and lib
 5. Install: b2.exe install
 ```
 Installed boost in the path C:/Boost, add CMakeList with `SET(BOOST_ROOT"C:/Boost")`
-
-3. Setup of conda env SD-CPP and install OpenVINO with conda-forge
-
-4. CMake with build.bat like:
+* Eigen:
+```shell
+1. Download from https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip 
+2. Unzip to path C:/Eigen3/eigen-3.4.0 
+3. Run next step's build.bat will report error: not found Eigen3Config.cmake/eigen3-config.cmake
+- Create build folder for Eigen and Open VS in this path C:/Eigen3/eigen-3.4.0/build
+- Open VS's developer PS terminal to do "cmake .." and redo the CMake 
+```
+Ref:[not found Eigen3Config.cmake/eigen3-config.cmake](https://stackoverflow.com/questions/48144415/not-found-eigen3-dir-when-configuring-a-cmake-project-in-windows)
+3. CMake with command lines, create a script build.bat:
 
 ```shell
 rmdir /Q /S build
@@ -170,9 +175,16 @@ cmake -G "Visual Studio 16 2019" -A x64 ^
 cmake --build . --config Release
 ```
 
-5. Put `soulcard.safetensors` and the converted model IR(like `FP16_static`) of `dreamlike-anime-1.0` into the `models` folder
+4. Put safetensors and model IR into the models folder with the defaut path:
+`models\dreamlike-anime-1.0\FP16_static` 
+`models\soulcard.safetensors`
 
-6. Run with Anaconda prompt: must in the `build` path
- `.\Release\SD-generate.exe -l ''` or `.\Release\SD-generate.exe` 
+5. Run with Anaconda prompt:  `.\Release\SD-generate.exe -l ''` or `.\Release\SD-generate.exe` 
 
-7. Debug within Visual Studio(open .sln file in the `build` folder)
+```shell
+Notice: 
+* must run command line within path of build, or .exe could not find the models
+* .exe is in the Release folder 
+```
+
+6. Debug within Visual Studio(open .sln file in the `build` folder)

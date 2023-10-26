@@ -75,3 +75,9 @@ def get_unet_weights(lora_dict_list):
         if k["type"] == "unet":
             unet_weights.append(k["value"])
     return unet_weights
+
+# DEBUG: 
+# print("begin to load safetensor")
+# py_lora_tensor = load_safetensors("./models/soulcard.safetensors")
+# print("finished loaded safetensor and begin to get weights")
+# py_lora_weights = get_lora_weights(py_lora_tensor, 0.75)
