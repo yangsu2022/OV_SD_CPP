@@ -101,7 +101,10 @@ void* read_file(const char *filename, int64_t *file_size)
 {
 	FILE *f = fopen(filename, "rb");
 
-	if (!f)  die("can't open %s", filename);
+	// if (!f)  die("can't open %s", filename);
+    if (!f) {
+        throw std::runtime_error("Error loading the lora model. Please check your SD IR model or lora weights file(*.safetensors).\n");
+    }
 
 	if(fseek(f, 0, SEEK_END)) die("can't fseek end on %s", filename);
 	
@@ -196,10 +199,10 @@ LoraWeight4Vec
 modify_layer(const std::string& key, float alpha = 0.75f) {
     
     const char *filename = key.c_str();
-	if (!filename) {
-        std::cout << "safetensor path: " << filename << "not exist\n";
-        exit(0);
-    };
+	// if (!filename) {
+    //     std::cout << "safetensor path: " << filename << "not exist\n";
+    //     exit(0);
+    // };
 
 	int64_t sz = 0;
 	void * file = read_file(filename, &sz);
@@ -425,8 +428,8 @@ std::vector<ov::CompiledModel> load_lora_weights_cpp(ov::Core& core, std::shared
             std::cout << "unet run pass:" << std::chrono::duration <double, std::milli> (end_unet-start_unet).count() << " ms" << std::endl;
             
         }
-        catch (...) {
-            std::cout<< "Error loading the lora model. Please check your SD IR model or lora weights file(*.safetensors).\n";
+        catch (const std::exception& e) {
+            std::cerr << "Exception: " << e.what();
             compiled_lora_models.push_back(core.compile_model(text_encoder_model, device));
             compiled_lora_models.push_back(core.compile_model(unet_model, device));
             return compiled_lora_models;

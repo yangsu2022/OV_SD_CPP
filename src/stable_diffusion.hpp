@@ -833,18 +833,7 @@ std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& dev
     std::shared_ptr<ov::Model> unet_model = core.read_model((model_path+"/"+type+"/unet/openvino_model.xml").c_str());
     std::shared_ptr<ov::Model> decoder_model = core.read_model((model_path+"/"+type+"/vae_decoder/openvino_model.xml").c_str());  
 
-    // with pybind
-    // std::vector<ov::CompiledModel> compiled_lora_models = load_lora_weights(core, text_encoder_model, unet_model, device, lora_models);
-    
-    // without pybind
-    std::vector<ov::CompiledModel> compiled_lora_models = load_lora_weights_cpp(core, text_encoder_model, unet_model, device, lora_models);
-
-    SD_compiled_models.push_back(core.compile_model(text_encoder_model, device));
-    SD_compiled_models.push_back(core.compile_model(unet_model, device));
-
-    // for (int32_t it=0; it < (int32_t)compiled_lora_models.size(); it++){
-    //     SD_compiled_models.push_back(compiled_lora_models[it]);
-    // } 
+    SD_compiled_models = load_lora_weights_cpp(core, text_encoder_model, unet_model, device, lora_models);
     
     ov::preprocess::PrePostProcessor ppp(decoder_model);
     ppp.output().model().set_layout("NCHW");
