@@ -75,10 +75,12 @@ Use the same OpenVINO environment as the tokenizer extension
 Usage:
   OV_SD_CPP [OPTION...]
 
-* `-p, --posPrompt arg`     Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
+* `-p, --posPrompt arg` Initial positive prompt for SD  (default: cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting)
 * `-n, --negPrompt arg` Default is empty with space (default: )
-* `-d, --device arg` AUTO, CPU, or GPU (default: CPU)
+* `-d, --device arg`    AUTO, CPU, or GPU (default: CPU)
+* `--step arg`          Number of diffusion step ( default: 20)
 * `-s, --seed arg`      Number of random seed to generate latent (default: 42)
+* `--num arg`           Number of image output(default: 1)
 * `--height arg`        Height of output image (default: 512)
 * `--width arg`         Width of output image (default: 512)
 * `--log arg`           Generate logging into log.txt for debug
