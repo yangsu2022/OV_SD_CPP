@@ -10,7 +10,9 @@ int32_t main(int32_t argc, char *argv[]) {
         ("p,posPrompt", "Initial positive prompt for SD ", cxxopts::value<std::string>()->default_value("cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting"))
         ("n,negPrompt", "Defaut is empty with space", cxxopts::value<std::string>()->default_value(" "))
         ("d,device", "AUTO, CPU, or GPU", cxxopts::value<std::string>()->default_value("CPU"))
-        ("s,seed", "Number of random seed to generate latent", cxxopts::value<size_t>()->default_value("42"))
+        ("step", "Number of diffusion step", cxxopts::value<size_t>()->default_value("20"))
+        ("s,seed", "Number of random seed to generate latent for one image output", cxxopts::value<size_t>()->default_value("42"))
+        ("num", "Number of image output", cxxopts::value<size_t>()->default_value("1"))
         ("height", "height", cxxopts::value<size_t>()->default_value("512"))
         ("width", "width", cxxopts::value<size_t>()->default_value("512"))
         ("log", "generate logging into log.txt for debug", cxxopts::value<bool>()->default_value("false"))
@@ -41,8 +43,9 @@ int32_t main(int32_t argc, char *argv[]) {
     const std::string positive_prompt = result["posPrompt"].as<std::string>();
     const std::string negative_prompt = result["negPrompt"].as<std::string>();
     const std::string device = result["device"].as<std::string>();
-    
+    uint32_t step = result["step"].as<size_t>();
     uint32_t seed = result["seed"].as<size_t>();
+    uint32_t num = result["num"].as<size_t>();
     uint32_t height = result["height"].as<size_t>();
     uint32_t width = result["width"].as<size_t>();
     const bool use_logger = result["log"].as<bool>();
@@ -62,9 +65,32 @@ int32_t main(int32_t argc, char *argv[]) {
         exit(0);
     }
 
-    std::string output_png_path = std::string{"./result_"} + std::to_string( seed ) + std::string{".png"};
+    std::vector<std::string> output_vec;
+    std::vector<uint32_t> seed_vec;
+        std::string folderName = "images";
+    try {
+        std::filesystem::create_directory(folderName);
+
+    } catch (const std::exception& e) {
+        std::cerr << "fail to create dir" << e.what() << std::endl;
+    }
+
+    if (num == 1) {
+        // output_vec
+        seed_vec.push_back(seed);
+        std::string output_png_path = std::string{"./images/seed_"} + std::to_string( seed ) + std::string{".png"};
+        output_vec.push_back(output_png_path);
+    } else {
+        for (uint32_t n = 0; n < num; n++) {
+            seed_vec.push_back(n);
+            std::string output_png_path = std::string{"./images/seed_"} + std::to_string( n ) + std::string{".png"};
+            output_vec.push_back(output_png_path);
+        }
+
+    }
+
     auto start_total = std::chrono::steady_clock::now();
-    stable_diffusion( positive_prompt, output_png_path, device, 20, seed, height, width, negative_prompt, use_logger, use_cache, model_path, type, lora_path, alpha, use_OV_extension, read_NP_latent);
+    stable_diffusion( positive_prompt, output_vec, device, step, seed_vec, num, height, width, negative_prompt, use_logger, use_cache, model_path, type, lora_path, alpha, use_OV_extension, read_NP_latent);
     auto end_total = std::chrono::steady_clock::now();
     auto duration_total = std::chrono::duration_cast<std::chrono::duration<float>>(end_total - start_total);
     return 0;

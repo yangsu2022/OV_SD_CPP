@@ -819,7 +819,7 @@ std::vector<float> prompt_function( ov::CompiledModel& text_encoder_compiled_mod
 }
 
 
-std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& device, std::string& type, std::map<std::string,float>& lora_models, bool use_ov_extension, bool use_cache){
+std::vector<ov::CompiledModel> SD_init(const std::string& model_path, const std::string& device, const std::string& type, const std::map<std::string,float>& lora_models, bool use_ov_extension, bool use_cache){
 
     ov::Core core; 
     
@@ -858,27 +858,19 @@ std::vector<ov::CompiledModel> SD_init(std::string& model_path, std::string& dev
 }
 
 
-void stable_diffusion( std::string positive_prompt = std::string{}, std::string output_png_path = std::string{}, std::string device = std::string{}, int32_t step = 20, uint32_t seed = 42, uint32_t height = 512, uint32_t width = 512, std::string negative_prompt = std::string{}, 
-    bool use_logger = false, bool use_cache = false, std::string model_path = std::string{}, std::string type = std::string{}, std::string lora_path = std::string{}, float alpha = 0.75, bool use_ov_extension = false, 
+void stable_diffusion( const std::string& positive_prompt = std::string{}, const std::vector<std::string>& output_vec = {}, const std::string& device = std::string{}, int32_t step = 20, const std::vector<uint32_t>& seed_vec = {}, uint32_t num = 1, uint32_t height = 512, uint32_t width = 512, std::string negative_prompt = std::string{}, 
+    bool use_logger = false, bool use_cache = false, const std::string& model_path = std::string{}, const std::string& type = std::string{}, const std::string& lora_path = std::string{}, float alpha = 0.75, bool use_ov_extension = false, 
     bool read_np_latent = false ){
 
     logger.setLoggingEnabled(use_logger);
     logger.log_time(LogLevel::DEBUG);
     logger.log_string(LogLevel::DEBUG, "Welcome to use Stable-Diffusion-OV.");
-    
-    if ( positive_prompt.empty() )
-        positive_prompt = "cyberpunk cityscape like Tokyo New York  with tall buildings at dusk golden hour cinematic lighting";
-
-    if ( output_png_path.empty() )
-        output_png_path = std::string{"./result_"} + std::to_string( step ) + std::string{"_"} + std::to_string( seed ) + std::string{".png"};
-    
     logger.log_string(LogLevel::INFO, "----------------[start]------------------");
     logger.log_value(LogLevel::INFO, "positive_prompt: " ,positive_prompt);
     logger.log_value(LogLevel::INFO, "negative_prompt: ", negative_prompt);
     logger.log_value(LogLevel::INFO, "Device: ", device);
-    logger.log_value(LogLevel::INFO, "output_png_path: ", output_png_path);
-    logger.log_value(LogLevel::INFO, "seed: ", seed); 
     logger.log_value(LogLevel::INFO, "step: ", step);    
+    logger.log_value(LogLevel::INFO, "num: ", num); 
     logger.log_value(LogLevel::INFO, "height: ", height); 
     logger.log_value(LogLevel::INFO, "width: ", width); 
     logger.log_value(LogLevel::INFO, "model_path: ", model_path);
@@ -895,9 +887,9 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
     std::cout << "positive_prompt: " << positive_prompt << std::endl;
     std::cout << "negative_prompt: " << negative_prompt << std::endl;
     std::cout << "Device: " << device << std::endl;
-    std::cout << "output_png_path: " << output_png_path << std::endl;
-    std::cout << "seed: " << seed << std::endl;
+    std::cout << "output_png_path: ./build/images/" << std::endl;
     std::cout << "step: " << step << std::endl;
+    std::cout << "num: " << num << std::endl;
     std::cout << "height: " << height << std::endl;
     std::cout << "width: " << width << std::endl;
     std::cout << "model_path: " << model_path << std::endl;
@@ -921,85 +913,87 @@ void stable_diffusion( std::string positive_prompt = std::string{}, std::string 
     auto duration_SDinit = std::chrono::duration_cast<std::chrono::duration<float>>(end_SDinit - start_SDinit);
 
     logger.log_value(LogLevel::DEBUG, "duration of SD_init(s): " , duration_SDinit.count());
+    auto start_tokenizer = std::chrono::steady_clock::now();
     
     std::vector<float> text_embeddings;
     if (use_ov_extension) {
         // OVTokenizer (WIP)
         logger.log_string(LogLevel::INFO, "----------------[tokenizer]------------------");
         std::cout << "----------------[tokenizer]------------------" << std::endl;
-        auto start_tokenizer = std::chrono::steady_clock::now();
         std::vector<std::vector<int32_t>> pos_infered_token = tokenizer_infer_function(SD_models[3], positive_prompt);
         std::vector<std::vector<int32_t>> neg_infered_token = tokenizer_infer_function(SD_models[3], negative_prompt);
-        auto end_tokenizer = std::chrono::steady_clock::now();
-        auto duration_tokenizer = std::chrono::duration_cast<std::chrono::duration<float>>(end_tokenizer - start_tokenizer);
-        std::cout << "duration (pos + neg prompt): " << duration_tokenizer.count() << " s" << std::endl;
 
         logger.log_string(LogLevel::INFO, "----------------[text embedding]------------------");
         std::cout << "----------------[text embedding]------------------" << std::endl;
         
-        auto start_clip = std::chrono::steady_clock::now();
+        // auto start_clip = std::chrono::steady_clock::now();
         std::vector<float> text_embeddings_pos = clip_infer_function( SD_models[0], pos_infered_token[0] );
         std::vector<float> text_embeddings_neg = clip_infer_function( SD_models[0], neg_infered_token[0] );
         text_embeddings = std::vector<float>(text_embeddings_neg);
         text_embeddings.insert( text_embeddings.end(), text_embeddings_pos.begin(), text_embeddings_pos.end() );
-        auto end_clip = std::chrono::steady_clock::now();
-        auto duration_clip = std::chrono::duration_cast<std::chrono::duration<float>>(end_clip - start_clip);
-        std::cout << "duration (pos + neg prompt): " << duration_clip.count() << " s" << std::endl;    
+        // auto end_clip = std::chrono::steady_clock::now();
+        // auto duration_clip = std::chrono::duration_cast<std::chrono::duration<float>>(end_clip - start_clip);
+        // std::cout << "duration (pos + neg prompt): " << duration_clip.count() << " s" << std::endl;    
     } else {
         // not use OVTokenizer
-        auto start_prompt = std::chrono::steady_clock::now();
         logger.log_string(LogLevel::INFO, "----------------[prompt_function]------------------");
         std::cout << "----------------[prompt_function]------------------" << std::endl;
         text_embeddings = prompt_function( SD_models[0], positive_prompt, negative_prompt );
-        auto end_prompt = std::chrono::steady_clock::now();
-        auto duration_prompt = std::chrono::duration_cast<std::chrono::duration<float>>(end_prompt - start_prompt);
-        std::cout << "duration (pos + neg prompt): " << duration_prompt.count() << " s" << std::endl;
     }
 
+    auto end_tokenizer = std::chrono::steady_clock::now();
+    auto duration_tokenizer = std::chrono::duration_cast<std::chrono::duration<float>>(end_tokenizer - start_tokenizer);
+    std::cout << "duration (pos + neg prompt): " << duration_tokenizer.count() << " s" << std::endl;
+    
     logger.log_string(LogLevel::INFO, "----------------[diffusion]------------------");
     std::cout << "----------------[diffusion]---------------" << std::endl;
 
+    for (uint32_t n =0; n < num; n++) {
+        
+        logger.log_value(LogLevel::INFO, "seed: ", seed_vec[n]); 
+        std::cout << "image No."<< n << ", seed = " << seed_vec[n] << std::endl;
 
-    std::vector<float> latent_vector_1d;
-    if (read_np_latent) {
-        latent_vector_1d = np_randn_function();
-    } else {
-        latent_vector_1d = std_randn_function(seed, height, width);
+        std::vector<float> latent_vector_1d;
+        if (read_np_latent) {
+            latent_vector_1d = np_randn_function();
+        } else {
+            latent_vector_1d = std_randn_function(seed_vec[n], height, width);
+        }
+        logger.log_vector(LogLevel::DEBUG, "randn output: ", latent_vector_1d, 0, 20);
+
+        auto start_diffusion = std::chrono::steady_clock::now();
+        auto sample = diffusion_function( SD_models[1], seed_vec[n], step, height, width, latent_vector_1d, text_embeddings );
+        auto end_diffusion = std::chrono::steady_clock::now();
+        auto duration_diffusion = std::chrono::duration_cast<std::chrono::duration<float>>(end_diffusion - start_diffusion);
+        std::cout << "duration (all " << step << " steps): " << duration_diffusion.count() << " s, each step: " << duration_diffusion.count() / step << " s" << std::endl;
+
+        logger.log_string(LogLevel::INFO, "----------------[decode]------------------");
+        std::cout << "----------------[decode]------------------" << std::endl;
+        auto start_decode = std::chrono::steady_clock::now();
+        auto output_decoder = vae_decoder_function( SD_models[2], sample, height, width );
+        auto end_decode = std::chrono::steady_clock::now();
+        auto duration_decode = std::chrono::duration_cast<std::chrono::duration<float>>(end_decode - start_decode);
+        std::cout << "duration: " << duration_decode.count() << " s" << std::endl;
+
+        logger.log_string(LogLevel::INFO, "----------------[save]------------------");
+        std::cout << "----------------[save]--------------------" << std::endl;
+        auto start_save = std::chrono::steady_clock::now();
+
+        cv::Mat mat;
+        mat.create(height, width, CV_8UC3);
+        std::vector<uint8_t> output_decoder_int = std::vector<uint8_t>(output_decoder.begin(), output_decoder.end());
+        memcpy(mat.data, output_decoder_int.data(), output_decoder_int.size()*sizeof(uint8_t));
+        logger.log_value(LogLevel::INFO, "output_png_path: ", output_vec[n]);
+        std::cout << "output_png_path: " << output_vec[n].c_str() << std::endl;
+        cvtColor(mat, mat,cv::COLOR_BGR2RGB);
+        cv::imwrite(output_vec[n].c_str(), mat);
+        auto end_save = std::chrono::steady_clock::now();
+        auto duration_save = std::chrono::duration_cast<std::chrono::duration<float>>(end_save - start_save);
+
+        auto duration_total = std::chrono::duration_cast<std::chrono::duration<float>>(end_decode - start_diffusion + end_tokenizer - start_tokenizer);
+        std::cout << "duration of one image generation without model compiling: " << duration_total.count() << " s\n\n" << std::endl;
     }
-    logger.log_vector(LogLevel::DEBUG, "randn output: ", latent_vector_1d, 0, 20);
-
-    auto start_diffusion = std::chrono::steady_clock::now();
-    auto sample = diffusion_function( SD_models[1], seed, step, height, width, latent_vector_1d, text_embeddings );
-    auto end_diffusion = std::chrono::steady_clock::now();
-    auto duration_diffusion = std::chrono::duration_cast<std::chrono::duration<float>>(end_diffusion - start_diffusion);
-    std::cout << "duration (all " << step << " steps): " << duration_diffusion.count() << " s, each step: " << duration_diffusion.count() / step << " s" << std::endl;
-
-    logger.log_string(LogLevel::INFO, "----------------[decode]------------------");
-    std::cout << "----------------[decode]------------------" << std::endl;
-    auto start_decode = std::chrono::steady_clock::now();
-    auto output_decoder = vae_decoder_function( SD_models[2], sample, height, width );
-    auto end_decode = std::chrono::steady_clock::now();
-    auto duration_decode = std::chrono::duration_cast<std::chrono::duration<float>>(end_decode - start_decode);
-    std::cout << "duration: " << duration_decode.count() << " s" << std::endl;
-
-    logger.log_string(LogLevel::INFO, "----------------[save]------------------");
-    std::cout << "----------------[save]--------------------" << std::endl;
-    auto start_save = std::chrono::steady_clock::now();
-
-    cv::Mat mat;
-    mat.create(height, width, CV_8UC3);
-    std::vector<uint8_t> output_decoder_int = std::vector<uint8_t>(output_decoder.begin(), output_decoder.end());
-    memcpy(mat.data, output_decoder_int.data(), output_decoder_int.size()*sizeof(uint8_t));
-    logger.log_value(LogLevel::INFO, "output_png_path: ", output_png_path);
-    std::cout << "output_png_path: " << output_png_path.c_str() << std::endl;
-    cvtColor(mat, mat,cv::COLOR_BGR2RGB);
-    cv::imwrite(output_png_path.c_str(), mat);
-    auto end_save = std::chrono::steady_clock::now();
-    auto duration_save = std::chrono::duration_cast<std::chrono::duration<float>>(end_save - start_save);
 
     logger.log_string(LogLevel::INFO, "----------------[close]------------------");
     std::cout << "----------------[close]-------------------" << std::endl;
-
-    auto duration_total = std::chrono::duration_cast<std::chrono::duration<float>>(end_decode - end_SDinit);
-    std::cout << "duration of one image generation without model compiling: " << duration_total.count() << " s" << std::endl;
 }

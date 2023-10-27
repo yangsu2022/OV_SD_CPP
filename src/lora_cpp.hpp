@@ -1,4 +1,5 @@
 #include <iostream>
+#include <filesystem>
 #include <iomanip>
 #include <vector>
 #include <string>
@@ -25,8 +26,8 @@
 #include "openvino/pass/pattern/op/wrap_type.hpp"
 
 #define die(...) do{printf(__VA_ARGS__); fputc('\n',stdout); exit(EXIT_FAILURE);}while(0);
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#define MAX(a,b) ((a)>(b)?(a):(b))
+#define SAFE_MIN(a,b) ((a)<(b)?(a):(b))
+#define SAFE_MAX(a,b) ((a)>(b)?(a):(b))
 
 
 class InsertLoRA : public ov::pass::MatcherPass {
@@ -174,6 +175,18 @@ void print_origin_layer(const std::string& key) {
 	safetensors_File f = {0};
 
 	char * result = safetensors_file_init(file, sz, &f); 
+    if (result) {
+        std::cout << result << std::endl;
+
+        for (char* s = SAFE_MAX( static_cast<char*>(file), f.error_context - 20);
+            s < SAFE_MIN(f.error_context + 21, f.one_byte_past_end_of_header);
+            s++) {
+            std::cout.put(*s);
+        }
+
+        std::cout << "\n";
+        std::cout << "         ^ HERE" << std::endl;
+    }
     
 	for (int i = 0; i < f.num_tensors; i++) {
 		safetensors_TensorDescriptor t = f.tensors[i];
@@ -209,7 +222,18 @@ modify_layer(const std::string& key, float alpha = 0.75f) {
 	
 	safetensors_File f = {0};
 	char * result = safetensors_file_init(file, sz, &f); 
-    
+    if (result) {
+        std::cout << result << std::endl;
+
+        for (char* s = MAX( static_cast<char*>(file), f.error_context - 20);
+            s < MIN(f.error_context + 21, f.one_byte_past_end_of_header);
+            s++) {
+            std::cout.put(*s);
+        }
+
+        std::cout << "\n";
+        std::cout << "         ^ HERE" << std::endl;
+    }
 	// modify the layer name
 	std::vector<std::map<std::string, std::string>> lora_name_list;
 	// Eigen::RowMajor
@@ -335,7 +359,7 @@ modify_layer(const std::string& key, float alpha = 0.75f) {
     std::vector<std::vector<float>> unet_vec;
 
     // from eigen::matrix to vector, after matmul
-    for (int i = 0; i < lora_name_list.size(); i++) {
+    for (size_t i = 0; i < lora_name_list.size(); i++) {
         std::map<std::string, std::string> lora_map = lora_name_list[i];
         Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weight_mat = lora_weight_list[i];
 
@@ -375,7 +399,7 @@ modify_layer(const std::string& key, float alpha = 0.75f) {
 }
 
 
-std::vector<ov::CompiledModel> load_lora_weights_cpp(ov::Core& core, std::shared_ptr<ov::Model>& text_encoder_model, std::shared_ptr<ov::Model>& unet_model, std::string& device, std::map<std::string,float>& lora_models) {
+std::vector<ov::CompiledModel> load_lora_weights_cpp(ov::Core& core, std::shared_ptr<ov::Model>& text_encoder_model, std::shared_ptr<ov::Model>& unet_model, const std::string& device, const std::map<std::string,float>& lora_models) {
     std::vector<ov::CompiledModel> compiled_lora_models;
 
     if(!lora_models.empty()){
@@ -385,7 +409,7 @@ std::vector<ov::CompiledModel> load_lora_weights_cpp(ov::Core& core, std::shared
         int flag = 0;
         try {
             auto start = std::chrono::steady_clock::now();
-            for (std::map<std::string,float>::iterator it=lora_models.begin(); it!=lora_models.end(); ++it){
+            for (std::map<std::string,float>::const_iterator it=lora_models.begin(); it!=lora_models.end(); ++it){
                 // DEBUG:
                 // print_origin_layer(it->first);
                 

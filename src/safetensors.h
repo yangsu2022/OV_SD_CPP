@@ -112,16 +112,6 @@ static int safetensors_str_equal(safetensors_Str a, const char * b)
 	return equal;
 }
 
-static int safetensors_lookup(safetensors_File *f, const char *name)
-// For convenience: loop over tensors and return the index of the tensor whose 
-// name matches a given string (or -1, if no match is found).
-{
-	for(int i = 0; i < f->num_tensors; i++)
-		if(safetensors_str_equal(f->tensors[i].name, name))
-			return i;
-	return -1;
-}
-
 
 // Enum values for the 'dtype' field
 enum {
@@ -138,24 +128,6 @@ enum {
 	
 	SAFETENSORS_NUM_DTYPES
 };
-
-// For convenience: sizes of a given dtype code
-static int safetensors_dtype_size(int dtype)
-{
-	switch(dtype) {
-	case SAFETENSORS_F64:  return 8;
-	case SAFETENSORS_F32:  return 4;
-	case SAFETENSORS_F16:  return 2;
-	case SAFETENSORS_BF16: return 2;
-	case SAFETENSORS_I64:  return 8;
-	case SAFETENSORS_I32:  return 4;
-	case SAFETENSORS_I16:  return 2;
-	case SAFETENSORS_I8:   return 1;
-	case SAFETENSORS_U8:   return 1;
-	case SAFETENSORS_BOOL: return 1; // TODO check if this is right
-	}
-	return 0;
-}
 
 #endif
 
@@ -396,7 +368,7 @@ more_memory(safetensors_File *out)
 char *
 apply_key_value_pair(safetensors_File *out, KeyValuePair kvp, char *baseptr)
 {
-	#define KNOWN_DTYPES "F64, F32, F16, BF16, I64, I32, I16, I8, U8, or BOOL"
+	// #define KNOWN_DTYPES "F64, F32, F16, BF16, I64, I32, I16, I8, U8, or BOOL"
 	if (safetensors_str_equal(kvp.key, "dtype")) {
 		if (!kvp.value_is_str)
 			return const_cast<char*>("Expected a string value for 'dtype'");
@@ -421,7 +393,7 @@ apply_key_value_pair(safetensors_File *out, KeyValuePair kvp, char *baseptr)
 		else if (safetensors_str_equal(kvp.svalue, "BOOL"))
 			out->tensors[out->num_tensors].dtype = SAFETENSORS_BOOL;
 		// else return "Unrecognized datatype (expected " KNOWN_DTYPES ")";
-		else return "Unrecognized datatype (expected " KNOWN_DTYPES;
+		else return const_cast<char*>("Unrecognized datatype (expected F64, F32, F16, BF16, I64, I32, I16, I8, U8, or BOOL)");
 
 
 	} else if (safetensors_str_equal(kvp.key, "shape")) {
@@ -463,9 +435,12 @@ safetensors_file_init(void *file_buffer, int64_t file_buffer_bytes, safetensors_
 	{
 		uint64_t header_len_u64 = 0;
 		mem_copy(&header_len_u64, file_buffer, sizeof(header_len_u64));
-		if (header_len_u64 > (uint64_t)INT_MAX) 
+		// if (header_len_u64 > (uint64_t)INT_MAX) 
+		if (header_len_u64 > static_cast<uint64_t>(INT_MAX)) {
 			#define STRINGIFY(x) #x
-			return "File header allegedly more than INT_MAX (" STRINGIFY(INT_MAX) ") bytes, file likely corrupt";
+		// 	return "File header allegedly more than INT_MAX (" STRINGIFY(INT_MAX) ") bytes, file likely corrupt";
+		return const_cast<char*>("File header allegedly more than INT_MAX (" STRINGIFY(INT_MAX) ") bytes, file likely corrupt");
+}
 		header_len = header_len_u64;
 	}
 	assert(header_len >= 0);

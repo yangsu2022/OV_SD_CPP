@@ -10,12 +10,13 @@ C++ Packages:
 
 Notice: 
 
-SD Preparation in two steps above could be auto implemented with build_dependencies.sh in the scripts directory 
+SD Preparation in two steps above could be auto implemented with build_dependencies.sh.
+This script provides 2 ways to install OpenVINO 2023.1.0: conda-forge and Download archives 
 ```shell
+cd scripts
 chmod +x build_dependencies.sh
 ./build_dependencies.sh
 ```
-build_dependencies_old.sh provide the previous OpenVINO installation from [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/) without conda-forge 
 
 ## Step 2: Prepare SD model and Tokenizer model
 * SD v1.5 model:
@@ -140,8 +141,7 @@ So use default tokenizer without config `-e, --useOVExtension`, when negative pr
 
 2. C++ dependencies:
 * OpenVINO:
-To test this pipeline: Install via Conda `conda install -c conda-forge openvino=2023.1.0`
-To deployment without conda: [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/), unzip and setup environment vars with setupvars.bat
+To deployment without Conda: [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/), unzip and setup environment vars with `.\setupvars.bat`
 * OpenCV:
 Download and setup Environment Variable: add the path of bin and lib
 (System Properties -> System Properties -> Environment Variables -> System variables -> Path )
@@ -179,8 +179,12 @@ cmake --build . --config Release
 `models\dreamlike-anime-1.0\FP16_static` 
 `models\soulcard.safetensors`
 
-5. Run with Anaconda prompt:  `.\Release\SD-generate.exe -l ''` or `.\Release\SD-generate.exe` 
+5. Run with Anaconda prompt:  
 
+```shell
+cd PROJECT_SOURCE_DIR\build
+.\Release\SD-generate.exe -l '' or .\Release\SD-generate.exe
+```
 ```shell
 Notice: 
 * must run command line within path of build, or .exe could not find the models
