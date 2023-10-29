@@ -10,8 +10,10 @@ C++ Packages:
 Notice: 
 
 SD Preparation in two steps above could be auto implemented with build_dependencies.sh.
-This script provides 2 ways to install OpenVINO 2023.1.0: conda-forge and Download archives 
-Use Intel sample [writeOutputBmp function](https://github.com/openvinotoolkit/openvino/blob/539b5a83ba7fcbbd348e4dc308e4a0f2dee8343c/samples/cpp/common/utils/include/samples/common.hpp#L155) instead of OpenCV for image saving
+
+This script provides 2 ways to install OpenVINO 2023.1.0: [conda-forge](https://anaconda.org/conda-forge/openvino) and [Download archives](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/). 
+
+Use Intel sample [writeOutputBmp function](https://github.com/openvinotoolkit/openvino/blob/539b5a83ba7fcbbd348e4dc308e4a0f2dee8343c/samples/cpp/common/utils/include/samples/common.hpp#L155) instead of OpenCV for image saving.
 ```shell
 cd scripts
 chmod +x build_dependencies.sh
