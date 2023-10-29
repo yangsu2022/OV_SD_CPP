@@ -24,15 +24,13 @@ else
     echo "CMake is already installed."
 fi
 
-# Check if OpenCV C++ libraries are installed using dpkg
-if dpkg -l | grep libopencv &> /dev/null; then
-    echo "OpenCV C++ libraries are already installed using dpkg."
-elif [ -d "/usr/local/include/opencv4" ]; then
-    echo "OpenCV C++ libraries are already installed in /usr/local/include/opencv4."
+# Check if Eigen3 libraries are installed using dpkg
+if dpkg -l | grep libeigen3-dev &> /dev/null; then
+    echo "Eigen3 are already installed."
 else
-    echo "OpenCV C++ libraries are not installed. Installing OpenCV via apt..."
+    echo "Eigen3 C++ libraries are not installed. Installing Eigen3 via apt..."
     sudo apt update
-    sudo apt install libopencv-dev -y
+    sudo apt install libeigen3-dev -y
 fi
 
 # Check if Boost is installed

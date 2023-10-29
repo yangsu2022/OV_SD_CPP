@@ -12,7 +12,6 @@ if (WIN32)
 endif (WIN32)
 
 find_package(OpenVINO REQUIRED)
-find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -27,4 +26,4 @@ target_include_directories(SD-generate PRIVATE
                             ${OV_INCLUDE_DIR}
                             ${EIGEN3_INCLUDE_DIR})
 
-target_link_libraries(SD-generate PRIVATE openvino::runtime Eigen3::Eigen ${OV_LIBRARY} ${OpenCV_LIBS} ${Boost_LIBRARIES} )
+target_link_libraries(SD-generate PRIVATE openvino::runtime Eigen3::Eigen ${OV_LIBRARY} ${Boost_LIBRARIES} )

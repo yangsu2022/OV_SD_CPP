@@ -225,8 +225,8 @@ modify_layer(const std::string& key, float alpha = 0.75f) {
     if (result) {
         std::cout << result << std::endl;
 
-        for (char* s = MAX( static_cast<char*>(file), f.error_context - 20);
-            s < MIN(f.error_context + 21, f.one_byte_past_end_of_header);
+        for (char* s = SAFE_MAX( static_cast<char*>(file), f.error_context - 20);
+            s < SAFE_MIN(f.error_context + 21, f.one_byte_past_end_of_header);
             s++) {
             std::cout.put(*s);
         }

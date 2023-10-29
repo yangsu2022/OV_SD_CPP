@@ -76,14 +76,13 @@ int32_t main(int32_t argc, char *argv[]) {
     }
 
     if (num == 1) {
-        // output_vec
         seed_vec.push_back(seed);
-        std::string output_png_path = std::string{"./images/seed_"} + std::to_string( seed ) + std::string{".png"};
+        std::string output_png_path = std::string{"./images/seed_"} + std::to_string( seed ) + std::string{".bmp"};
         output_vec.push_back(output_png_path);
     } else {
         for (uint32_t n = 0; n < num; n++) {
             seed_vec.push_back(n);
-            std::string output_png_path = std::string{"./images/seed_"} + std::to_string( n ) + std::string{".png"};
+            std::string output_png_path = std::string{"./images/seed_"} + std::to_string( n ) + std::string{".bmp"};
             output_vec.push_back(output_png_path);
         }
 

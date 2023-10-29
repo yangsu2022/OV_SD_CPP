@@ -14,10 +14,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <opencv2/opencv.hpp>
 #include <openvino/openvino.hpp>
 #include <boost/math/quadrature/trapezoidal.hpp>
-// #include "lora.hpp"
+#include "write_bmp.hpp"
 #include "lora_cpp.hpp"
 #include "tqdm.hpp"
 #include <utils.hpp>
@@ -258,7 +257,6 @@ std::vector<float> unet_infer_function( ov::CompiledModel& unet_model, std::vect
 }
 
 
-
 float lms_derivative_function(float tau, int32_t order, int32_t curr_order, std::vector<float> sigma_vec,int32_t t){
     float prod = 1.0;
                                 
@@ -273,6 +271,7 @@ float lms_derivative_function(float tau, int32_t order, int32_t curr_order, std:
     return prod;
 }
  
+
 std::vector<float> np_randn_function( ) {
     
     // read np generated latents with defaut seed 42
@@ -299,6 +298,17 @@ std::vector<float> np_randn_function( ) {
     
     return latent_vector_1d;
 }
+
+
+void convertBGRtoRGB(std::vector<unsigned char>& image, int width, int height) {
+    for (int i = 0; i < width * height; i++) {
+        // Swap the red and blue components (BGR to RGB)
+        unsigned char temp = image[i * 3];
+        image[i * 3] = image[i * 3 + 2];
+        image[i * 3 + 2] = temp;
+    }
+}
+
 
 std::vector<float> diffusion_function( ov::CompiledModel& unet_compiled_model, uint32_t seed, int32_t step, uint32_t d_h, uint32_t d_w, std::vector<float>& latent_vector_1d,std::vector<float>& text_embeddings_2_77_768 )
 { 
@@ -979,14 +989,12 @@ void stable_diffusion( const std::string& positive_prompt = std::string{}, const
         std::cout << "----------------[save]--------------------" << std::endl;
         auto start_save = std::chrono::steady_clock::now();
 
-        cv::Mat mat;
-        mat.create(height, width, CV_8UC3);
         std::vector<uint8_t> output_decoder_int = std::vector<uint8_t>(output_decoder.begin(), output_decoder.end());
-        memcpy(mat.data, output_decoder_int.data(), output_decoder_int.size()*sizeof(uint8_t));
-        logger.log_value(LogLevel::INFO, "output_png_path: ", output_vec[n]);
-        std::cout << "output_png_path: " << output_vec[n].c_str() << std::endl;
-        cvtColor(mat, mat,cv::COLOR_BGR2RGB);
-        cv::imwrite(output_vec[n].c_str(), mat);
+
+        convertBGRtoRGB(output_decoder_int, width, height);
+        
+        writeOutputBmp(output_vec[n], output_decoder_int.data(), height, width);
+
         auto end_save = std::chrono::steady_clock::now();
         auto duration_save = std::chrono::duration_cast<std::chrono::duration<float>>(end_save - start_save);
 

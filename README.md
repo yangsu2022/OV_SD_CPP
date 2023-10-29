@@ -6,12 +6,12 @@ C++ pipeline with OpenVINO native API for Stable Diffusion v1.5 with LMS Discret
 C++ Packages:
 * OpenVINO: intall with `conda install -c conda-forge openvino=2023.1.0`
 * Boost: Install with `sudo apt-get install libboost-all-dev` for LMSDiscreteScheduler's integration
-* OpenCV: Install with `sudo apt install libopencv-dev` for image saving
 
 Notice: 
 
 SD Preparation in two steps above could be auto implemented with build_dependencies.sh.
 This script provides 2 ways to install OpenVINO 2023.1.0: conda-forge and Download archives 
+Use Intel sample [writeOutputBmp function](https://github.com/openvinotoolkit/openvino/blob/539b5a83ba7fcbbd348e4dc308e4a0f2dee8343c/samples/cpp/common/utils/include/samples/common.hpp#L155) instead of OpenCV for image saving
 ```shell
 cd scripts
 chmod +x build_dependencies.sh
@@ -144,9 +144,6 @@ So use default tokenizer without config `-e, --useOVExtension`, when negative pr
 2. C++ dependencies:
 * OpenVINO:
 To deployment without Conda: [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/), unzip and setup environment vars with `.\setupvars.bat`
-* OpenCV:
-Download and setup Environment Variable: add the path of bin and lib
-(System Properties -> System Properties -> Environment Variables -> System variables -> Path )
 * Boost:
 ```shell
 1. Download from https://sourceforge.net/projects/boost/files/boost-binaries/1.83.0/
@@ -165,6 +162,7 @@ Installed boost in the path C:/Boost, add CMakeList with `SET(BOOST_ROOT"C:/Boos
 - Open VS's developer PS terminal to do "cmake .." and redo the CMake 
 ```
 Ref:[not found Eigen3Config.cmake/eigen3-config.cmake](https://stackoverflow.com/questions/48144415/not-found-eigen3-dir-when-configuring-a-cmake-project-in-windows)
+
 3. CMake with command lines, create a script build.bat:
 
 ```shell
@@ -185,7 +183,8 @@ cmake --build . --config Release
 
 ```shell
 cd PROJECT_SOURCE_DIR\build
-.\Release\SD-generate.exe -l '' or .\Release\SD-generate.exe
+.\Release\SD-generate.exe -l ''  // without lora
+.\Release\SD-generate.exe
 ```
 ```shell
 Notice: 
