@@ -1,12 +1,20 @@
-#ifndef TQDM_HPP
-#define TQDM_HPP
+// Copyright (C) 2023 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
-#include <iostream>
+/**
+ * @brief a header file for process_bar
+ * @file process_bar.hpp
+ */
+
+#ifndef PROCESS_BAR_HPP
+#define PROCESS_BAR_HPP
+
 #include <iomanip>
+#include <iostream>
 
-class tqdm {
+class process_bar {
 public:
-    tqdm(int total, int width = 40) : total(total), width(width) {
+    process_bar(int total, int width = 40) : total(total), width(width) {
         std::cout << "[";
         print_progress(0);
         std::cout << "]" << std::flush;
@@ -31,9 +39,12 @@ private:
         int pos = (width * progress) / 100;
         std::cout << "\r[";
         for (int i = 0; i < width; ++i) {
-            if (i < pos) std::cout << "=";
-            else if (i == pos) std::cout << ">";
-            else std::cout << " ";
+            if (i < pos)
+                std::cout << "=";
+            else if (i == pos)
+                std::cout << ">";
+            else
+                std::cout << " ";
         }
         std::cout << "] " << std::setw(3) << progress << "%" << std::flush;
         last_progress = progress;
@@ -44,4 +55,4 @@ private:
     int last_progress;
 };
 
-#endif // TQDM_HPP
+#endif  // PROCESS_BAR_HPP

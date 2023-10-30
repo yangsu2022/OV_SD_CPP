@@ -1,9 +1,9 @@
-// Copyright (C) 2018-2023 Intel Corporation
+// Copyright (C) 2023 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
-//
 
 /**
- * @brief a header file with writeOutputBmp func from samples/common.hpp
+ * @brief a header file with writeOutputBmp func from
+ * samples/common.hpp
  * @file write_bmp.hpp
  */
 
@@ -68,17 +68,47 @@ static UNUSED void writeOutputBmp(std::string name, unsigned char* data, size_t 
         0  // start of data offset
     };
     unsigned char info[40] = {
-        40,   0,    0, 0,  // info hd size
-        0,    0,    0, 0,  // width
-        0,    0,    0, 0,  // height
-        1,    0,           // number color planes
-        24,   0,           // bits per pixel
-        0,    0,    0, 0,  // compression is none
-        0,    0,    0, 0,  // image bits size
-        0x13, 0x0B, 0, 0,  // horz resolution in pixel / m
-        0x13, 0x0B, 0, 0,  // vert resolution (0x03C3 = 96 dpi, 0x0B13 = 72 dpi)
-        0,    0,    0, 0,  // #colors in palette
-        0,    0,    0, 0,  // #important colors
+        40,
+        0,
+        0,
+        0,  // info hd size
+        0,
+        0,
+        0,
+        0,  // width
+        0,
+        0,
+        0,
+        0,  // height
+        1,
+        0,  // number color planes
+        24,
+        0,  // bits per pixel
+        0,
+        0,
+        0,
+        0,  // compression is none
+        0,
+        0,
+        0,
+        0,  // image bits size
+        0x13,
+        0x0B,
+        0,
+        0,  // horz resolution in pixel / m
+        0x13,
+        0x0B,
+        0,
+        0,  // vert resolution (0x03C3 = 96 dpi, 0x0B13 = 72
+            // dpi)
+        0,
+        0,
+        0,
+        0,  // #colors in palette
+        0,
+        0,
+        0,
+        0,  // #important colors
     };
 
     OPENVINO_ASSERT(

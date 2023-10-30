@@ -1,11 +1,19 @@
+// Copyright (C) 2023 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * @brief a header file for ov extension tokenizer
+ * @file utils.hpp
+ */
+
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
-#include <cstring>
 
-std::string ByteArrayToString(const uint8_t *arr, int size) {
+std::string ByteArrayToString(const uint8_t* arr, int size) {
     std::ostringstream convert;
 
     for (int a = 0; a < size; a++) {
