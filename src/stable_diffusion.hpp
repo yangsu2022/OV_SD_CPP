@@ -796,7 +796,7 @@ std::vector<float> prompt_function( ov::CompiledModel& text_encoder_compiled_mod
     std::unordered_map<std::string, int> tokenizer_token2idx;
     {
         std::ifstream vocab_file;
-        std::string vocab_path = "../scripts/vocab.txt";
+        std::string vocab_path = "../models/vocab.txt";
         vocab_file.open( vocab_path.data() );
         if (vocab_file.is_open()) {
             std::string s;

@@ -104,7 +104,7 @@ void* read_file(const char *filename, int64_t *file_size)
 
 	// if (!f)  die("can't open %s", filename);
     if (!f) {
-        throw std::runtime_error("Error loading the lora model. Please check your SD IR model or lora weights file(*.safetensors).\n");
+        throw std::runtime_error("model init without lora\n");
     }
 
 	if(fseek(f, 0, SEEK_END)) die("can't fseek end on %s", filename);
@@ -453,7 +453,7 @@ std::vector<ov::CompiledModel> load_lora_weights_cpp(ov::Core& core, std::shared
             
         }
         catch (const std::exception& e) {
-            std::cerr << "Exception: " << e.what();
+            std::cerr << e.what();
             compiled_lora_models.push_back(core.compile_model(text_encoder_model, device));
             compiled_lora_models.push_back(core.compile_model(unet_model, device));
             return compiled_lora_models;

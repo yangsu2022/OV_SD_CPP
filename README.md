@@ -186,7 +186,7 @@ cmake --build . --config Release
 ```shell
 cd PROJECT_SOURCE_DIR\build
 .\Release\SD-generate.exe -l ''  // without lora
-.\Release\SD-generate.exe
+.\Release\SD-generate.exe -l ../models/soulcard.safetensors
 ```
 ```shell
 Notice: 
