@@ -3,28 +3,29 @@ The pure C++ text-to-image pipeline, driven by the OpenVINO native API for Stabl
 ## Step 1: Prepare environment
 
 C++ Packages:
-* OpenVINO: install with `conda install -c conda-forge openvino=2023.1.0`
-* Boost: Install with `sudo apt-get install libboost-all-dev` for LMSDiscreteScheduler's integration
+* CMake: Cross-platform build tool
+* OpenVINO: Model inference
+* Boost: LMSDiscreteScheduler's integration
+* Eigen3: Lora enabling
 
-Notice: 
-
-SD Preparation in two steps above could be auto implemented with build_dependencies.sh.
-
-This script provides 2 ways to install OpenVINO 2023.1.0: [conda-forge](https://anaconda.org/conda-forge/openvino) and [Download archives](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/). 
-
-Use Intel sample [writeOutputBmp function](https://github.com/openvinotoolkit/openvino/blob/539b5a83ba7fcbbd348e4dc308e4a0f2dee8343c/samples/cpp/common/utils/include/samples/common.hpp#L155) instead of OpenCV for image saving.
+SD Preparation could be auto implemented with `build_dependencies.sh`. This script provides 2 ways to install `OpenVINO 2023.1.0`: [conda-forge](https://anaconda.org/conda-forge/openvino) and [Download archives](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/).
 ```shell
 cd scripts
 chmod +x build_dependencies.sh
 ./build_dependencies.sh
+...
+"use conda-forge to install OpenVINO Toolkit 2023.1.0 (C++), or download from archives? (yes/no): "
 ```
+
+Notice: Use Intel sample [writeOutputBmp function](https://github.com/openvinotoolkit/openvino/blob/539b5a83ba7fcbbd348e4dc308e4a0f2dee8343c/samples/cpp/common/utils/include/samples/common.hpp#L155) instead of OpenCV for image saving.
+
 
 ## Step 2: Prepare SD model and Tokenizer model
 #### SD v1.5 model:
 1. Prepare a conda python env and install dependencies:
     ```shell
     cd scripts
-    conda create -n SD-CPP python==3.10 -y
+    conda create -n SD-CPP python==3.10
     pip install -r requirements.txt
     ```
 2. Download a huggingface SD v1.5 model like [runwayml/stable-diffusion-v1-5](https://huggingface.co/runwayml/stable-diffusion-v1-5), here another model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) is used to test for the lora enabling. Ref to the official website for [model downloading](https://huggingface.co/docs/hub/models-downloading).
