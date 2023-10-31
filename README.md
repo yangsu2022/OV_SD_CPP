@@ -1,5 +1,5 @@
 # OV_SD_CPP
-The Pure C++ text-to-image pipeline, driven by the OpenVINO native API for Stable Diffusion v1.5 with LMS Discrete Scheduler, supports both static and dynamic model inference. It includes advanced features like Lora integration with safetensors and OpenVINO extension for tokenizer. This demo has been tested on the Windows platform.
+The pure C++ text-to-image pipeline, driven by the OpenVINO native API for Stable Diffusion v1.5 with LMS Discrete Scheduler, supports both static and dynamic model inference. It includes advanced features like Lora integration with safetensors and OpenVINO extension for tokenizer. This demo has been tested on the Windows platform.
 ## Step 1: Prepare environment
 
 C++ Packages:
@@ -91,7 +91,7 @@ Usage:
 * `-r, --readNPLatent`  Read numpy generated latents from file
 * `-m, --modelPath arg` Specify path of SD model IR (default: ../models/dreamlike-anime-1.0)
 * `-t, --type arg`      Specify the type of SD model IR (FP16_static or FP16_dyn) (default: FP16_static)
-* `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: ../models/soulcard.safetensors)
+* `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: )
 * `-a, --alpha arg`     alpha for lora (default: 0.75)
 * `-h, --help`          Print usage
 
@@ -183,4 +183,4 @@ Notice:
 
 6. Debug within Visual Studio(open .sln file in the `build` folder)
 
-Notice: Use default tokenizer without config -e, --useOVExtension on Windows platform
+Notice: has issue to build OpenVINO custom extension on Windows platform, so use the default tokenizer.
