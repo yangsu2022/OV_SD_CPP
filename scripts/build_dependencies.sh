@@ -77,13 +77,12 @@ if [ "$choice" = "yes" ]; then
         # Activate the conda environment using source
         source "${conda_bin_dir}/../etc/profile.d/conda.sh"
         conda activate "${environment_name}"
-        conda install numpy safetensors pybind11 -y
-        echo "Environment 'SD-CPP' created and packages installed."
+        conda install -c conda-forge openvino=2023.1.0 -y
+        echo "Environment 'SD-CPP' created and openvino 2023.1.0 installed."
     else
         echo "The 'SD-CPP' conda environment already exists."
     fi
 
-    conda install -c conda-forge openvino=2023.1.0 -y
     
 else
     echo "### downnload OpenVINO 2023.1.0 from archives, unzip and setup vars."
