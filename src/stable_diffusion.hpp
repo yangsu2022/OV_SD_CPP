@@ -26,105 +26,13 @@
 #include <utils.hpp>
 #include <vector>
 
+#include "lms_scheduler.hpp"
 #include "logger.hpp"
 #include "lora_cpp.hpp"
 #include "process_bar.hpp"
 #include "write_bmp.hpp"
 
 Logger logger("log.txt");
-
-// https://gist.github.com/lorenzoriano/5414671
-template <typename T>
-std::vector<T> linspace(T a, T b, size_t N) {
-    T h = (b - a) / static_cast<T>(N - 1);
-    std::vector<T> xs(N);
-    typename std::vector<T>::iterator x;
-    T val;
-    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
-        *x = val;
-    return xs;
-}
-
-// adaptive trapezoidal integral function
-template <class F, class Real>
-Real trapezoidal(F f, Real a, Real b, Real tol = 1e-6, int max_refinements = 100) {
-    Real h = (b - a) / 2.0;
-    Real ya = f(a);
-    Real yb = f(b);
-    Real I0 = (ya + yb) * h;
-
-    for (int k = 1; k <= max_refinements; ++k) {
-        Real sum = 0.0;
-        for (int j = 1; j <= (1 << (k - 1)); ++j) {
-            sum += f(a + (2 * j - 1) * h);
-        }
-
-        Real I1 = 0.5 * I0 + h * sum;
-        if (k > 1 && std::abs(I1 - I0) < tol) {
-            return I1;
-        }
-
-        I0 = I1;
-        h /= 2.0;
-    }
-
-    // If the desired accuracy is not achieved, return the best estimate
-    return I0;
-}
-
-std::vector<float> LMSDiscreteScheduler(int32_t num_train_timesteps = 1000,
-                                        float beta_start = 0.00085f,
-                                        float beta_end = 0.012f,
-                                        std::string beta_schedule = "scaled_linear",
-                                        std::string prediction_type = "epsilon",
-                                        std::vector<float> trained_betas = std::vector<float>{}) {
-    std::string _predictionType = prediction_type;
-    auto Derivatives = std::vector<std::vector<float>>{};
-    auto Timesteps = std::vector<int>();
-
-    auto alphas = std::vector<float>();
-    auto betas = std::vector<float>();
-    if (!trained_betas.empty()) {
-        auto betas = trained_betas;
-    } else if (beta_schedule == "linear") {
-        for (int32_t i = 0; i < num_train_timesteps; i++) {
-            betas.push_back(beta_start + (beta_end - beta_start) * i / (num_train_timesteps - 1));
-        }
-    } else if (beta_schedule == "scaled_linear") {
-        float start = sqrt(beta_start);
-        float end = sqrt(beta_end);
-        std::vector<float> temp = linspace(start, end, num_train_timesteps);
-        for (float b : temp) {
-            betas.push_back(b * b);
-        }
-    } else {
-        std::cout << " beta_schedule must be one of 'linear' or 'scaled_linear' " << std::endl;
-    }
-    for (float b : betas) {
-        alphas.push_back(1 - b);
-    }
-    std::vector<float> log_sigma_vec;
-    for (int32_t i = 1; i <= (int)alphas.size(); i++) {
-        float alphas_cumprod =
-            std::accumulate(std::begin(alphas), std::begin(alphas) + i, 1.0, std::multiplies<float>{});
-        float sigma = sqrt((1 - alphas_cumprod) / alphas_cumprod);
-        log_sigma_vec.push_back(std::log(sigma));
-    }
-    return log_sigma_vec;
-}
-
-std::vector<float> std_randn_function(uint32_t seed, uint32_t h, uint32_t w) {
-    std::vector<float> noise;
-    {
-        std::mt19937 gen{static_cast<unsigned long>(seed)};
-        std::normal_distribution<float> normal{0.0f, 1.0f};
-        noise.resize(h / 8 * w / 8 * 4 * 1);
-        std::for_each(noise.begin(), noise.end(), [&](float& x) {
-            x = normal(gen);
-        });
-    }
-    return noise;
-}
 
 std::vector<uint8_t> vae_decoder_function(ov::CompiledModel& decoder_compiled_model,
                                           std::vector<float>& sample,
@@ -187,33 +95,6 @@ std::vector<uint8_t> vae_decoder_function(ov::CompiledModel& decoder_compiled_mo
     }
 
     return output_vec;
-}
-
-std::vector<int64_t> sigma_to_t(std::vector<float>& log_sigmas, float sigma) {
-    double log_sigma = std::log(sigma);
-    std::vector<float> dists(1000);
-    for (int32_t i = 0; i < 1000; i++) {
-        if (log_sigma - log_sigmas[i] >= 0)
-            dists[i] = 1;
-        else
-            dists[i] = 0;
-        if (i == 0)
-            continue;
-        dists[i] += dists[i - 1];
-    }
-
-    // get sigmas range
-    int32_t low_idx = std::min(int(std::max_element(dists.begin(), dists.end()) - dists.begin()), 1000 - 2);
-    int32_t high_idx = low_idx + 1;
-    float low = log_sigmas[low_idx];
-    float high = log_sigmas[high_idx];
-    // interpolate sigmas
-    double w = (low - log_sigma) / (low - high);
-    w = std::max(0.0, std::min(1.0, w));
-
-    int64_t t = std::llround((1 - w) * low_idx + w * high_idx);
-    std::vector<int64_t> vector_t{t};
-    return vector_t;
 }
 
 std::vector<float> unet_infer_function(ov::CompiledModel& unet_model,
@@ -299,43 +180,6 @@ std::vector<float> unet_infer_function(ov::CompiledModel& unet_model,
     return noise_pred_vec;
 }
 
-float lms_derivative_function(float tau, int32_t order, int32_t curr_order, std::vector<float> sigma_vec, int32_t t) {
-    float prod = 1.0;
-
-    for (int32_t k = 0; k < order; k++) {
-        if (curr_order == k) {
-            continue;
-        }
-        prod *= (tau - sigma_vec[t - k]) / (sigma_vec[t - curr_order] - sigma_vec[t - k]);
-    }
-    return prod;
-}
-
-std::vector<float> np_randn_function() {
-    // read np generated latents with defaut seed 42
-    std::vector<float> latent_vector_1d;
-    std::ifstream latent_copy_file;
-    latent_copy_file.open("../scripts/np_latents_512x512.txt");
-    std::vector<std::string> latent_vector_new;
-    if (latent_copy_file.is_open()) {
-        std::string word;
-        while (latent_copy_file >> word)
-            latent_vector_new.push_back(word);
-        latent_copy_file.close();
-    } else {
-        std::cout << "could not find the np_latents_512x512.txt" << std::endl;
-        exit(0);
-    }
-
-    latent_vector_new.insert(latent_vector_new.begin(), latent_vector_new.begin(), latent_vector_new.end());
-
-    for (int i = 0; i < (int)latent_vector_new.size() / 2; i++) {
-        latent_vector_1d.push_back(std::stof(latent_vector_new[i]));
-    }
-
-    return latent_vector_1d;
-}
-
 void convertBGRtoRGB(std::vector<unsigned char>& image, int width, int height) {
     for (int i = 0; i < width * height; i++) {
         // Swap the red and blue components (BGR to RGB)
@@ -352,23 +196,10 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
                                       uint32_t d_w,
                                       std::vector<float>& latent_vector_1d,
                                       std::vector<float>& text_embeddings_2_77_768) {
-    std::vector<float> log_sigma_vec = LMSDiscreteScheduler();
-
-    // t_to_sigma
-    std::vector<float> sigma(step);
-    float delta = -999.0f / (step - 1);
-
-    // transform interpolation to time range
-
-    for (int32_t i = 0; i < step; i++) {
-        float t = 999.0 + i * delta;
-        int32_t low_idx = std::floor(t);
-        int32_t high_idx = std::ceil(t);
-        float w = t - low_idx;
-        sigma[i] = std::exp((1 - w) * log_sigma_vec[low_idx] + w * log_sigma_vec[high_idx]);
-    }
-
-    sigma.push_back(0.f);
+    // std::vector<float> log_sigma_vec = LMSDiscreteScheduler();
+    LMSDiscreteScheduler lmsscheduler(1000, 0.00085f, 0.012f);
+    std::vector<float> log_sigma_vec = lmsscheduler.log_sigma;
+    std::vector<float> sigma = lmsscheduler.set_timesteps(1000);
 
     logger.log_vector(LogLevel::DEBUG, "sigma: ", sigma, 0, 20);
 
@@ -379,8 +210,6 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
         return c * n;
     });
 
-    std::vector<std::vector<float>> derivative_list;
-
     process_bar bar(sigma.size());
 
     for (int32_t i = 0; i < step; i++) {
@@ -389,7 +218,8 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
         logger.log_string(LogLevel::DEBUG, "------------------------------------");
         logger.log_value(LogLevel::DEBUG, "step: ", i);
 
-        std::vector<int64_t> t = sigma_to_t(log_sigma_vec, sigma[i]);
+        std::vector<int64_t> t = lmsscheduler.sigma_to_t(log_sigma_vec, sigma[i]);
+
         logger.log_value(LogLevel::DEBUG, "t: ", t[0]);
 
         std::vector<float> latent_model_input;
@@ -410,11 +240,6 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
         logger.log_vector(LogLevel::DEBUG, "text_em1: ", text_embeddings_2_77_768, 77 * 768, 5);
         logger.log_vector(LogLevel::DEBUG, "latent: ", latent_model_input, 0, 5);
 
-        // std::cout << "text_em1:  " ;
-        // for (int32_t i= 0; i <5 ; i++ ) {
-        //     // std::cout << text_embeddings_2_77_768[i*768+ 77*768] << " ";
-        // }
-
         auto start = std::chrono::steady_clock::now();
 
         std::vector<float> noise_pred_1d =
@@ -431,93 +256,8 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
 
         auto start_post = std::chrono::steady_clock::now();
         // LMS step function:
-        std::vector<float> derivative_vec_1d;
-        int32_t order = 4;
-        for (int32_t j = 0; j < static_cast<int>(latent_vector_1d.size()); j++) {
-            // 1. compute predicted original sample (x_0) from sigma-scaled predicted noise
-            // defaut "epsilon"
-            float pred_latent = latent_vector_1d[j] - sigma[i] * noise_pred_1d[j];
+        latent_vector_1d_new = lmsscheduler.step_func(noise_pred_1d, i, latent_vector_1d_new);
 
-            // 2. Convert to an ODE derivative
-            derivative_vec_1d.push_back((latent_vector_1d[j] - pred_latent) / sigma[i]);
-        }
-
-        derivative_list.push_back(derivative_vec_1d);
-        // keep the list size within 4
-        if ((int)derivative_list.size() > order) {
-            derivative_list.erase(derivative_list.begin());
-        }
-
-        for (int32_t m = 0; m < (int32_t)derivative_list.size(); m++) {
-            logger.log_vector(LogLevel::DEBUG, "DEBUG-derivative_list: ", derivative_list[m], 0, 5);
-        }
-
-        // 3. Compute linear multistep coefficients
-        order = std::min(i + 1, order);
-        logger.log_value(LogLevel::DEBUG, "Debug-order: ", order);
-
-        std::vector<float> lms_coeffs;
-        for (int32_t curr_order = 0; curr_order < order; curr_order++) {
-            auto f = [order, curr_order, sigma, i](float tau) {
-                return lms_derivative_function(tau, order, curr_order, sigma, i);
-            };
-            // auto start1 = std::chrono::steady_clock::now();
-            // auto integrated_coeff = boost::math::quadrature::trapezoidal(f,
-            //                                                              static_cast<double>(sigma[i]),
-            //                                                              static_cast<double>(sigma[i + 1]),
-            //                                                              1e-4);
-            // auto end1 = std::chrono::steady_clock::now();
-            // auto duration1 = std::chrono::duration_cast<std::chrono::duration<float>>(end1 - start1);
-            auto start2 = std::chrono::steady_clock::now();
-            auto integrated_coeff_new =
-                trapezoidal(f, static_cast<double>(sigma[i]), static_cast<double>(sigma[i + 1]), 1e-4);
-            auto end2 = std::chrono::steady_clock::now();
-            auto duration2 = std::chrono::duration_cast<std::chrono::duration<float>>(end2 - start2);
-
-            lms_coeffs.push_back(integrated_coeff_new);
-            // logger.log_value(LogLevel::DEBUG, "Debug-integrated_coeff: ", integrated_coeff);
-            logger.log_value(LogLevel::DEBUG, "Debug-integrated_coeff_new: ", integrated_coeff_new);
-            // logger.log_value(LogLevel::DEBUG, "Debug-integrated_coeff time: ", duration1.count());
-            logger.log_value(LogLevel::DEBUG, "Debug-integrated_coeff_new time : ", duration2.count());
-        }
-
-        // 4. Compute previous sample based on the derivatives path
-        // prev_sample = sample + sum(coeff * derivative for coeff, derivative in zip(lms_coeffs,
-        // reversed(self.derivatives))) Reverse list of tensors this.derivatives
-        std::vector<std::vector<float>> rev_derivative = derivative_list;
-        std::reverse(rev_derivative.begin(), rev_derivative.end());
-        // derivative * coeffs
-        for (int32_t m = 0; m < order; m++) {
-            float coeffs_const{lms_coeffs[m]};
-            std::for_each(rev_derivative[m].begin(), rev_derivative[m].end(), [coeffs_const](float& i) {
-                i *= coeffs_const;
-            });
-        }
-        // sum of derivative
-        std::vector<float> derivative_sum = rev_derivative[0];
-        if (order > 1) {
-            for (int32_t d = 0; d < order - 1; d++) {
-                std::transform(derivative_sum.begin(),
-                               derivative_sum.end(),
-                               rev_derivative[d + 1].begin(),
-                               derivative_sum.begin(),
-                               [](float x, float y) {
-                                   return x + y;
-                               });
-            }
-        }
-        // latent + sum of derivative
-        std::transform(derivative_sum.begin(),
-                       derivative_sum.end(),
-                       latent_vector_1d_new.begin(),
-                       latent_vector_1d_new.begin(),
-                       [](float x, float y) {
-                           return x + y;
-                       });
-        auto end_post = std::chrono::steady_clock::now();
-        auto duration_post = std::chrono::duration_cast<std::chrono::duration<float>>(end_post - start_post);
-        // std::cout << "duration of unet post integration(s): " << duration_post.count() << std::endl;
-        logger.log_value(LogLevel::DEBUG, "duration of unet post integration(s): ", duration_post.count());
         logger.log_vector(LogLevel::DEBUG, "Debug-latent_vector_1d_new: ", latent_vector_1d_new, 0, 5);
     }
     bar.finish();
