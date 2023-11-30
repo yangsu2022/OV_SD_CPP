@@ -53,7 +53,7 @@ public:
     // config
     int num_train_timesteps_config;
     int original_inference_steps_config;
-    std::vector<int> timesteps;
+    std::vector<int64_t> timesteps;
     float timestep_scaling = 10.0;
     std::string prediction_type_config;
     bool thresholding = false;
@@ -63,7 +63,7 @@ public:
     float sample_max_value = 1.0;
 
     std::vector<float> log_sigma;
-    int step = 20;
+    int step_config;
     std::vector<float> sigma;
     std::vector<std::vector<float>> derivative_list;
 
@@ -71,19 +71,21 @@ public:
     LMSDiscreteScheduler(int num_train_timesteps = 1000,
                          float beta_start = 0.00085,
                          float beta_end = 0.012,
+                         int step = 20,
                          std::string beta_schedule = "scaled_linear",
                          std::vector<float> trained_betas = {},
                          int original_inference_steps = 50,
                          bool set_alpha_to_one = true,
                          int steps_offset = 0,
                          std::string prediction_type = "epsilon",
-                         std::string timestep_spacing = "leading",
+                        //  std::string timestep_spacing = "leading",
                          bool rescale_betas_zero_snr = false
-
                          )
         : original_inference_steps_config(original_inference_steps),
           num_train_timesteps_config(num_train_timesteps),
-          prediction_type_config(prediction_type) {
+          prediction_type_config(prediction_type),
+          step_config(step)
+          {
         // __init__
 
         // betas
@@ -137,13 +139,20 @@ public:
     std::vector<float> set_timesteps(int num_inference_steps,
                                      int original_inference_steps = -1,
                                      double strength = 1.0) {
+        // timestep_spacing == "linspace"
+        timesteps.resize(num_inference_steps);
+        float step_size = static_cast<float>(num_train_timesteps_config - 1) / (num_inference_steps - 1);
+
+        for (int i = 0; i < num_inference_steps; ++i) {
+            timesteps[i] = static_cast<int64_t>(num_train_timesteps_config - 1 - i * step_size + 0.5);
+        }
+
         // t_to_sigma
-        sigma.resize(step);
-        float delta = -999.0f / (step - 1);
+        sigma.resize(step_config);
+        float delta = -999.0f / (step_config - 1);
 
         // transform interpolation to time range
-
-        for (int32_t i = 0; i < step; i++) {
+        for (int32_t i = 0; i < step_config; i++) {
             float t = 999.0 + i * delta;
             int32_t low_idx = std::floor(t);
             int32_t high_idx = std::ceil(t);
@@ -154,34 +163,6 @@ public:
         sigma.push_back(0.f);
 
         return sigma;
-    }
-
-    // copied from diffusers.schedulers.scheduling_euler_discrete._sigma_to_t
-    std::vector<int64_t> sigma_to_t(std::vector<float>& log_sigmas, float sigma) {
-        double log_sigma = std::log(sigma);
-        std::vector<float> dists(1000);
-        for (int32_t i = 0; i < 1000; i++) {
-            if (log_sigma - log_sigmas[i] >= 0)
-                dists[i] = 1;
-            else
-                dists[i] = 0;
-            if (i == 0)
-                continue;
-            dists[i] += dists[i - 1];
-        }
-
-        // get sigmas range
-        int32_t low_idx = std::min(int(std::max_element(dists.begin(), dists.end()) - dists.begin()), 1000 - 2);
-        int32_t high_idx = low_idx + 1;
-        float low = log_sigmas[low_idx];
-        float high = log_sigmas[high_idx];
-        // interpolate sigmas
-        double w = (low - log_sigma) / (low - high);
-        w = std::max(0.0, std::min(1.0, w));
-
-        int64_t t = std::llround((1 - w) * low_idx + w * high_idx);
-        std::vector<int64_t> vector_t{t};
-        return vector_t;
     }
 
     // adaptive trapezoidal integral function
@@ -331,7 +312,7 @@ private:
     // Define class members
     std::vector<float> betas;
     std::vector<float> alphas;
-    std::vector<float> alphas_cumprod;
+    // std::vector<float> alphas_cumprod;
     float final_alpha_cumprod;
     float initNoiseSigma;
     int _step_index;

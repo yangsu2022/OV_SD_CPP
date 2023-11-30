@@ -197,9 +197,9 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
                                       std::vector<float>& latent_vector_1d,
                                       std::vector<float>& text_embeddings_2_77_768) {
     // std::vector<float> log_sigma_vec = LMSDiscreteScheduler();
-    LMSDiscreteScheduler lmsscheduler(1000, 0.00085f, 0.012f);
+    LMSDiscreteScheduler lmsscheduler(1000, 0.00085f, 0.012f, step);
     std::vector<float> log_sigma_vec = lmsscheduler.log_sigma;
-    std::vector<float> sigma = lmsscheduler.set_timesteps(1000);
+    std::vector<float> sigma = lmsscheduler.set_timesteps(step);
 
     logger.log_vector(LogLevel::DEBUG, "sigma: ", sigma, 0, 20);
 
@@ -218,7 +218,8 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
         logger.log_string(LogLevel::DEBUG, "------------------------------------");
         logger.log_value(LogLevel::DEBUG, "step: ", i);
 
-        std::vector<int64_t> t = lmsscheduler.sigma_to_t(log_sigma_vec, sigma[i]);
+        std::vector<int64_t> t;
+        t.push_back(lmsscheduler.timesteps[i]);
 
         logger.log_value(LogLevel::DEBUG, "t: ", t[0]);
 
