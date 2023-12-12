@@ -29,8 +29,10 @@ int32_t main(int32_t argc, char* argv[]) {
             "512"))("width", "width", cxxopts::value<size_t>()->default_value("512"))(
         "log",
         "generate logging into log.txt for debug",
-        cxxopts::value<bool>()->default_value(
-            "false"))("c,useCache", "use model caching", cxxopts::value<bool>()->default_value("false"))(
+        cxxopts::value<bool>()->default_value( "false"))
+        ("c,useCache", "use model caching", cxxopts::value<bool>()->default_value("false"))
+        ("lcm", "use lcm scheduler", cxxopts::value<bool>()->default_value("false"))
+        (
         "e,useOVExtension",
         "use OpenVINO extension for tokenizer",
         cxxopts::value<bool>()->default_value("false"))("r,readNPLatent",
@@ -38,7 +40,7 @@ int32_t main(int32_t argc, char* argv[]) {
                                                         cxxopts::value<bool>()->default_value("false"))(
         "m,modelPath",
         "Specify path of SD model IR",
-        cxxopts::value<std::string>()->default_value("../models/dreamlike-anime-1.0"))(
+        cxxopts::value<std::string>()->default_value("../models/sd/dreamlike-anime-1.0"))(
         "t,type",
         "Specify the type of SD model IR(FP16_static or FP16_dyn)",
         cxxopts::value<std::string>()->default_value("FP16_static"))(
@@ -71,6 +73,7 @@ int32_t main(int32_t argc, char* argv[]) {
     uint32_t width = result["width"].as<size_t>();
     const bool use_logger = result["log"].as<bool>();
     const bool use_cache = result["useCache"].as<bool>();
+    const bool use_lcm_scheduler = result["lcm"].as<bool>();
     const bool use_OV_extension = result["useOVExtension"].as<bool>();
     const bool read_NP_latent = result["readNPLatent"].as<bool>();
     const std::string model_path = result["modelPath"].as<std::string>();
@@ -120,6 +123,7 @@ int32_t main(int32_t argc, char* argv[]) {
                      negative_prompt,
                      use_logger,
                      use_cache,
+                     use_lcm_scheduler,
                      model_path,
                      type,
                      lora_path,

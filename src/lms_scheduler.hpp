@@ -9,43 +9,6 @@
 #include <string>
 #include <vector>
 
-std::vector<float> std_randn_function(uint32_t seed, uint32_t h, uint32_t w) {
-    std::vector<float> noise;
-    {
-        std::mt19937 gen{static_cast<unsigned long>(seed)};
-        std::normal_distribution<float> normal{0.0f, 1.0f};
-        noise.resize(h / 8 * w / 8 * 4 * 1);
-        std::for_each(noise.begin(), noise.end(), [&](float& x) {
-            x = normal(gen);
-        });
-    }
-    return noise;
-}
-
-std::vector<float> np_randn_function() {
-    // read np generated latents with defaut seed 42
-    std::vector<float> latent_vector_1d;
-    std::ifstream latent_copy_file;
-    latent_copy_file.open("../scripts/np_latents_512x512.txt");
-    std::vector<std::string> latent_vector_new;
-    if (latent_copy_file.is_open()) {
-        std::string word;
-        while (latent_copy_file >> word)
-            latent_vector_new.push_back(word);
-        latent_copy_file.close();
-    } else {
-        std::cout << "could not find the np_latents_512x512.txt" << std::endl;
-        exit(0);
-    }
-
-    latent_vector_new.insert(latent_vector_new.begin(), latent_vector_new.begin(), latent_vector_new.end());
-
-    for (int i = 0; i < (int)latent_vector_new.size() / 2; i++) {
-        latent_vector_1d.push_back(std::stof(latent_vector_new[i]));
-    }
-
-    return latent_vector_1d;
-}
 
 class LMSDiscreteScheduler {
 public:
@@ -208,23 +171,20 @@ public:
     }
 
     // Predict the sample from the previous timestep by reversing the SDE.
-    std::vector<float> step_func(const std::vector<float>& model_output,
-                                 int32_t timestep,
-                                 std::vector<float>& sample,
+    std::vector<float> step_func(const std::vector<float>& noise_pred_1d,
+                                 int32_t i,
+                                 std::vector<float>& latent_vector_1d_new,
                                  int32_t order = 4) {
         // Predict the sample from the previous timestep by reversing the SDE.
         // This function propagates the diffusion process from the learned model outputs
         // (most often the predicted noise).
 
         // Args:
-        //     model_output: The direct output from learned diffusion model.
-        //     timestep: The current discrete timestep in the diffusion chain.
-        //     sample: A current instance of a sample created by the diffusion process.
+        //     noise_pred_1d: The direct output from learned diffusion model.
+        //     i: The current discrete index in the diffusion chain.
+        //     latent_vector_1d_new: A current instance of a sample created by the diffusion process.
         //     order (`int`, defaults to 4): The order of the linear multistep method.
 
-        std::vector<float> noise_pred_1d = model_output;
-        int i = timestep;
-        std::vector<float> latent_vector_1d_new = sample;
         std::vector<float> derivative_vec_1d;
         // Notice: latent_vector_1d = latent_vector_1d_new / 14.6146
 

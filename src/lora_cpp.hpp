@@ -88,6 +88,78 @@ public:
     }
 };
 
+// add op reshape for lcm-lora conv layer
+class InsertLCMLoRA : public ov::pass::MatcherPass {
+public:
+    OPENVINO_RTTI("InsertLCMLoRA", "1");
+    std::map<std::string, std::vector<float>>* local_lora_map;
+    explicit InsertLCMLoRA(std::map<std::string, std::vector<float>>& lora_map) {
+        local_lora_map = &lora_map;
+        auto label = ov::pass::pattern::wrap_type<ov::op::v0::Convert>();
+        ov::matcher_pass_callback callback = [=](ov::pass::pattern::Matcher& m) {
+            auto root = std::dynamic_pointer_cast<ov::op::v0::Convert>(m.get_match_root());
+            if (!root) {
+                return false;
+            }
+            ov::Output<ov::Node> root_output = m.get_match_value();
+            std::string root_name = root->get_friendly_name();
+            std::replace(root_name.begin(), root_name.end(), '.', '_');
+            std::map<std::string, std::vector<float>>::iterator it = local_lora_map->begin();
+            while (it != local_lora_map->end()) {
+                if ((root_name).find(it->first) != std::string::npos) {
+                    // std::cout << "root_name: " << root_name << ".shape: " << root_output.get_shape() << "\n";
+                    // here reshape the conv layer with shape [...,...,3,3], 
+                    // not including the conv_shortcut layer [...,...,1,1]
+                    if ((root_name.find("conv") != std::string::npos) &&
+                        (root_name.find("conv_shortcut") == std::string::npos)) {
+                        std::set<ov::Input<ov::Node>> consumers = root_output.get_target_inputs();
+
+                        // reshape lora to 4d, then add 
+                        auto conv_shape = ov::Shape{root->get_output_shape(0)};
+                        // std::cout << "conv reshape: (" << conv_shape[0] << ", " << conv_shape[1] * 9 << ")\n";
+
+                        std::shared_ptr<ov::Node> lora_const =
+                            ov::op::v0::Constant::create(ov::element::f32, {conv_shape[0], conv_shape[1] * 9}, it->second);
+                        auto reshape_lora_const = 
+                            ov::op::v0::Constant::create(ov::element::i32, ov::Shape{4}, ov::Shape{root->get_output_shape(0)});
+                        auto reshaped_lora = std::make_shared<ov::opset11::Reshape>(lora_const, reshape_lora_const, true);
+                        auto lora_add = std::make_shared<ov::opset11::Add>(root, reshaped_lora);
+
+                        for (auto consumer : consumers) {
+                            consumer.replace_source_output(lora_add->output(0));
+                        }
+                        register_new_node(lora_add);
+                        it = local_lora_map->erase(it);
+
+                    } else {
+                        std::set<ov::Input<ov::Node>> consumers = root_output.get_target_inputs();
+                        std::shared_ptr<ov::Node> lora_const =
+                            ov::op::v0::Constant::create(ov::element::f32,
+                                                         ov::Shape{root->get_output_shape(0)},
+                                                         it->second);
+                        auto conv_shape = ov::Shape{root->get_output_shape(0)};
+                        // std::cout << "shape: " << conv_shape << "\n";
+                        auto lora_add = std::make_shared<ov::opset11::Add>(root, lora_const);
+                        for (auto consumer : consumers) {
+                            consumer.replace_source_output(lora_add->output(0));
+                        }
+                        register_new_node(lora_add);
+                        it = local_lora_map->erase(it);
+                    }
+
+                } else {
+                    it++;
+                }
+            }
+            return true;
+        };
+        // Register pattern with Parameter operation as a pattern root node
+        auto m = std::make_shared<ov::pass::pattern::Matcher>(label, "InsertLCMLoRA");
+        // Register Matcher
+        register_matcher(m, callback);
+    }
+};
+
 void debug_print_str(safetensors_Str s) {
     for (int i = 0; i < s.len; i++)
         fputc(s.ptr[i], stdout);
@@ -322,9 +394,46 @@ LoraWeight4Vec modify_layer(const std::string& key, float alpha = 0.75f) {
         }
 
         std::vector<int64_t> shapeVector(tensor.shape, tensor.shape + tensor.n_dimensions);
+        std::vector<int64_t> shape_vec_0;
+        std::vector<int64_t> shape_vec_1;
 
-        std::vector<int64_t> shape_vec_0(pair_tensor[0].shape, pair_tensor[0].shape + pair_tensor[0].n_dimensions);
-        std::vector<int64_t> shape_vec_1(pair_tensor[1].shape, pair_tensor[1].shape + pair_tensor[1].n_dimensions);
+        // here reshape the conv layer with shape [...,...,3,3], 
+        // not including the conv_shortcut layer [...,...,1,1]
+        if (tensor.n_dimensions == 4 && shapeVector[2] != 1) {
+            // conv
+            // debug_print_str(tensor.name);
+            // std::cout << ".shape: (" << tensor.n_dimensions << ") [";
+            // for (int j = 0; j < tensor.n_dimensions; j++) {
+            //     const char* delim = j == tensor.n_dimensions - 1 ? "" : ", ";
+            //     std::cout << shapeVector[j] << delim;
+            // }
+            // std::cout << "]\n";
+            shape_vec_0.assign(pair_tensor[0].shape, pair_tensor[0].shape + pair_tensor[0].n_dimensions);
+            std::vector<int64_t> temp(pair_tensor[1].shape, pair_tensor[1].shape + pair_tensor[1].n_dimensions);
+            shape_vec_1.push_back(temp[0]);
+            shape_vec_1.push_back(temp[1] * temp[2] * temp[3]);
+
+            // std::cout << "shape_vec_0.value: ";
+            // for (auto s : shape_vec_0) {
+            //     std::cout << s << ", ";
+            // }
+            // std::cout << std::endl;
+            // std::cout << "shape_vec_1.value: ";
+            // for (auto s : shape_vec_1) {
+            //     std::cout << s << ", ";
+            // }
+            // std::cout << std::endl;
+        } else {
+            // debug_print_str(tensor.name);
+            // std::cout << ".shape: (" << tensor.n_dimensions << ") [";
+            // for (int j = 0; j < tensor.n_dimensions; j++) {
+            //     const char* delim = j == tensor.n_dimensions - 1 ? "" : ", ";
+            //     std::cout << shapeVector[j] << delim;
+            // }
+            // std::cout << "]\n";
+            shape_vec_0.assign(pair_tensor[0].shape, pair_tensor[0].shape + pair_tensor[0].n_dimensions);
+            shape_vec_1.assign(pair_tensor[1].shape, pair_tensor[1].shape + pair_tensor[1].n_dimensions);
+        }
 
         // read float16 weight
         auto raw_data_0 = readOVFloat16Data(pair_tensor[0]);
@@ -379,7 +488,7 @@ LoraWeight4Vec modify_layer(const std::string& key, float alpha = 0.75f) {
         std::string name = lora_map["name"];
         std::string type = lora_map["type"];
 
-        // std::cout << "Name: " << name << ", Type: " << type << ", Shape (" << weight_mat.rows() << ", " <<
+        // std::cout << "After Matmul, Name: " << name << ", Type: " << type << ", Shape (" << weight_mat.rows() << ", " <<
         // weight_mat.cols() << ")" << std::endl;
 
         if (lora_map["type"] == "text_encoder") {
@@ -451,7 +560,11 @@ std::vector<ov::CompiledModel> load_lora_weights_cpp(ov::Core& core,
                 std::cout << "lora_extract:" << std::chrono::duration<double, std::milli>(end - start).count() << " ms"
                           << std::endl;
             }
-            manager.register_pass<InsertLoRA>(lora_map);
+
+            // no need to modify the InsertLoRA class
+            // manager.register_pass<InsertLoRA>(lora_map);
+            manager.register_pass<InsertLCMLoRA>(lora_map);
+
             auto start_txt = std::chrono::steady_clock::now();
             // if(!encoder_layers.empty()){
             if (!lora_models.empty()) {
