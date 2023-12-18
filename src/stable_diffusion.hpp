@@ -374,7 +374,6 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
     return latent_vector_1d_new;
 }
 
-
 std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model,
                                       uint32_t seed,
                                       int32_t step,
@@ -388,6 +387,8 @@ std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model
 
     // 3. Prepare timesteps
     std::vector<int> lcm_timesteps = lcmscheduler.set_timesteps(step);
+    logger.log_vector(LogLevel::DEBUG, "lcm_timesteps: ", lcm_timesteps, 0, lcm_timesteps.size());
+
     // 4. Prepare latent variable: 
     // ref to def prepare_latents, here get latent_vector_1d, no need for scaling(init_noise_sigma=1)
     // 5. Get Guidance Scale Embedding
@@ -445,10 +446,8 @@ std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model
                          noise_pred_1d.size());
 
         auto start_post = std::chrono::steady_clock::now();
-        // LMS step function:
-        auto lcmscheduler_output = lcmscheduler.step_func(noise_pred_1d, lcm_timesteps[i], latent_vector_1d, seed);
-        latent_vector_1d = lcmscheduler_output.getPrevSample();
-        denoised = lcmscheduler_output.getDenoised();
+        
+        std::tie(latent_vector_1d, denoised) = lcmscheduler.step_func(noise_pred_1d, lcm_timesteps[i], latent_vector_1d, seed);
 
         logger.log_vector(LogLevel::DEBUG, "Debug-latent_vector_1d_new: ", latent_vector_1d, 0, 5);
         logger.log_vector(LogLevel::DEBUG, "Debug-denoised: ", denoised, 0, 5);

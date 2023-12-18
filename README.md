@@ -89,7 +89,7 @@ Usage:
 * `-c, --useCache`      Use model caching
 * `-e, --useOVExtension`Use OpenVINO extension for tokenizer
 * `-r, --readNPLatent`  Read numpy generated latents from file
-* `-m, --modelPath arg` Specify path of SD model IR (default: ../models/dreamlike-anime-1.0)
+* `-m, --modelPath arg` Specify path of SD model IR (default: ../models/sd/dreamlike-anime-1.0)
 * `-t, --type arg`      Specify the type of SD model IR (FP16_static or FP16_dyn) (default: FP16_static)
 * `-l, --loraPath arg`  Specify path of lora file. (*.safetensors). (default: )
 * `-a, --alpha arg`     alpha for lora (default: 0.75)
@@ -112,7 +112,7 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
 * Generate the debug logging into log.txt: ` ./SD-generate --log`
-* Generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
+* Generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/sd/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
 
 ![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/9bd58b64-6688-417e-b435-c0991247b97b)
 
@@ -127,12 +127,10 @@ For the generation quality, be careful with the negative prompt and random laten
 
 Program optimization: In addition to inference optimization, now parallel optimization with std::for_each only and add_compile_options(-O3 -march=native -Wall) with CMake 
   
-## Setup in Windows 10 with VS2019:
-1. Download [Anaconda3](https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Windows-x86_64.exe) and setup Conda env SD-CPP for OpenVINO with conda-forge and use the anaconda prompt terminal for CMake
-
-2. C++ dependencies:
+## Setup in Windows 11 with VS2022:
+1. Setup of C++ dependencies:
 * OpenVINO:
-To deployment without Conda: [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/), unzip and setup environment vars with `.\setupvars.bat`
+To deployment without Conda: [Download archives* with OpenVINO](https://storage.openvinotoolkit.org/repositories/openvino/packages/2023.1/windows/), unzip and setup environment vars: run `setupvars.bat` within the terminal Command Prompt for VS
 
 * Eigen:
 ```shell
@@ -142,25 +140,20 @@ To deployment without Conda: [Download archives* with OpenVINO](https://storage.
 - Create build folder for Eigen and Open VS in this path C:/Eigen3/eigen-3.4.0/build
 - Open VS's developer PS terminal to do "cmake .." and redo the CMake 
 ```
-Ref:[not found Eigen3Config.cmake/eigen3-config.cmake](https://stackoverflow.com/questions/48144415/not-found-eigen3-dir-when-configuring-a-cmake-project-in-windows)
+Ref: [not found Eigen3Config.cmake/eigen3-config.cmake](https://stackoverflow.com/questions/48144415/not-found-eigen3-dir-when-configuring-a-cmake-project-in-windows)
 
-3. CMake with command lines, create a script build.bat:
+2. CMake with Visual Studio and release config, run the script build.bat:
 
 ```shell
-rmdir /Q /S build
-mkdir build
-cd build
-cmake -G "Visual Studio 16 2019" -A x64 ^
- -DCMAKE_BUILD_TYPE=Release ^
-      ..
-cmake --build . --config Release
+cd scripts
+build.bat
 ```
 
-4. Put safetensors and model IR into the models folder with the following default path:
-`models\dreamlike-anime-1.0\FP16_static` 
+3. Put safetensors and model IR into the models folder with the following default path:
+`models\sd\dreamlike-anime-1.0\FP16_static` 
 `models\soulcard.safetensors`
 
-5. Run with prompt:  
+4. Run with prompt:  
 
 ```shell
 cd PROJECT_SOURCE_DIR\build
@@ -173,6 +166,8 @@ Notice:
 * .exe is in the Release folder 
 ```
 
-6. Debug within Visual Studio(open .sln file in the `build` folder)
+5. Run within Visual Studio (open .sln file in the `build` folder)
 
-Notice: has issue to build OpenVINO custom extension on Windows platform, so use the default tokenizer.
+Notice: 
+* has issue to build OpenVINO custom extension on Windows platform, so use the default tokenizer.
+* VS Debugging needs to [build OpenVINO source code](https://github.com/openvinotoolkit/openvino/blob/master/docs/dev/build_windows.md) for Debug version.  

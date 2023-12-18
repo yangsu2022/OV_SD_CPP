@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <tuple>
 
 std::vector<float> read_randn_function(const std::string& file_path) {
     std::ifstream rand_file;
@@ -31,7 +32,7 @@ std::vector<float> read_randn_function(const std::string& file_path) {
     return output;
 }
 
-// Function to get w_embedding
+// w_embedding is new input of unet model in the LCM
 std::vector<float> get_w_embedding(float guidance_scale = 8.0, uint32_t embedding_dim = 512) {
     float w = guidance_scale * 1000;
     uint32_t half_dim = embedding_dim / 2;
@@ -58,28 +59,9 @@ std::vector<float> get_w_embedding(float guidance_scale = 8.0, uint32_t embeddin
         res_vec.insert(res_vec.end(), 0);
 
     assert(res_vec.size() == embedding_dim);
-
-    // std::cout << "get_w_embedding:" << std::endl;
-    // std::cout << res_vec.size() << std::endl;
-    // for (auto i: res_vec)
-    //     std::cout << i << ' ';
-    // std::cout << std::endl;
     
     return res_vec;
 }
-
-
-class LCMSchedulerOutput {
-public:
-    LCMSchedulerOutput(const std::vector<float>& prevSample, const std::vector<float>& denoised) : prevSample(prevSample), denoised(denoised) {}
-
-    std::vector<float> getPrevSample() const { return prevSample; }
-    std::vector<float> getDenoised() const { return denoised; }
-
-private:
-    std::vector<float> prevSample;
-    std::vector<float> denoised;
-};
 
 class LCMScheduler {
 public:
@@ -125,15 +107,8 @@ public:
                 betas.push_back(beta_start + i * beta_step);
             }
         } else if (beta_schedule == "scaled_linear") {
-            // pytorch's self.betas has small precision gap 
-            // tensor([0.0008, 0.0009, 0.0009, 0.0009, 0.0009, ... 0.0119, 0.0119, 0.0119, 0.0119, 0.0120, 0.0120, 0.0120])
-
-            // c++ is more precise with the start-value 0.00085 instead of 0.0008
-            // 0.00085, 0.000854699, 0.00085941, 0.000864135, 0.000868872, ... 0.0119472, 0.0119648, 0.0119824, 0.012
 
             // Without linspace 
-            // float beta_start_sqrt = std::pow(beta_start, 0.5);
-            // float beta_end_sqrt = std::pow(beta_end, 0.5);
             float beta_start_sqrt = sqrt(beta_start);
             float beta_end_sqrt = sqrt(beta_end);
             float beta_step = (beta_end_sqrt - beta_start_sqrt) / (num_train_timesteps - 1);
@@ -141,10 +116,6 @@ public:
                 float current_beta_sqrt = beta_start_sqrt + i * beta_step;
                 betas.push_back(std::pow(current_beta_sqrt, 2));
             }
-
-            // for (int i = 0; i < num_train_timesteps; ++i) {
-            //     std::cout << betas[i] << ", ";
-            // }
 
         } else {
             throw std::runtime_error(beta_schedule + " is not implemented for " + typeid(*this).name());
@@ -157,24 +128,11 @@ public:
         alphas_cumprod.resize(num_train_timesteps);
         std::partial_sum(alphas.begin(), alphas.end(), alphas_cumprod.begin(), std::multiplies<float>());
         
-        // alphas_cumprod: 
-        // pytorch: 0.9991, 0.9983, 0.9974 ...  0.0048, 0.0047, 0.0047
-        // C++:     0.99915, 0.998296, 0.997438 ... 0.00477389, 0.00471669, 0.00466009
-        // std::cout << "alphas_cumprod: " << std::endl;
-        // for (int i = 0; i < num_train_timesteps; ++i) {
-        //     std::cout << alphas_cumprod[i] << ", ";
-        // }
-        // std::cout << std::endl;
         final_alpha_cumprod = set_alpha_to_one ? 1.0 : alphas_cumprod[0];
         initNoiseSigma = 1.0;
 
         timesteps.resize(num_train_timesteps);
         std::iota(timesteps.rbegin(), timesteps.rend(), 0);
-        // std::cout << "timesteps: " << std::endl;
-        // for (int i = 0; i < num_train_timesteps; ++i) {
-        //     std::cout << timesteps[i] << ", ";
-        // }
-        // std::cout << std::endl;
         _step_index = 0; 
     }
     
@@ -257,21 +215,14 @@ public:
         // LCM Timesteps Setting
         // The skipping step parameter k from the paper.
         int k = num_train_timesteps_config / original_steps;
-        // std::cout << "num_train_timesteps_config: " << num_train_timesteps_config << 
-        // ", original_steps: " << original_steps <<", K: " << k << "\n";
 
         std::vector<int> lcm_origin_timesteps;
 
         for (int i = 1; i <= static_cast<int>(original_steps * strength); ++i) {
             lcm_origin_timesteps.push_back(i * k - 1);
         }
-        // std::cout << "lcm_origin_timesteps: " << std::endl;
-        // for (float value : lcm_origin_timesteps) {
-        //     std::cout << value << " ";
-        // }
-        // std::cout << std::endl;
+
         int skipping_step = lcm_origin_timesteps.size() / num_inference_steps;
-        // std::cout << "skipping_step: " << skipping_step << "\n";
 
         if (skipping_step < 1) {
             throw std::invalid_argument("Invalid combination of original_steps and strength.");
@@ -279,12 +230,6 @@ public:
 
         // LCM Inference Steps Schedule
         std::reverse(lcm_origin_timesteps.begin(), lcm_origin_timesteps.end());
-
-        // std::cout << "reverse lcm_origin_timesteps: " << std::endl;
-        // for (float value : lcm_origin_timesteps) {
-        //     std::cout << value << " ";
-        // }
-        // std::cout << std::endl;
 
         std::vector<int> inference_indices;
         inference_indices.reserve(static_cast<size_t>(num_inference_steps));
@@ -300,12 +245,6 @@ public:
             timesteps.push_back(lcm_origin_timesteps[index]);
         }
 
-        // Print the result for demonstration purposes
-        // std::cout << "Timesteps: ";
-        // for (int timestep : timesteps) {
-        //     std::cout << timestep << " ";
-        // }
-        // std::cout << std::endl;
         return timesteps;
     }
 
@@ -334,48 +273,29 @@ public:
         return noise;
     }
     
-    LCMSchedulerOutput step_func(const std::vector<float>& model_output, int timestep, 
+    std::tuple<std::vector<float>, std::vector<float>>
+    step_func(const std::vector<float>& model_output, int timestep, 
                             const std::vector<float>& sample, int seed) {
         // Predict the sample from the previous timestep by reversing the SDE. 
         // if (num_inference_steps == 0) {
         //     throw std::runtime_error("Number of inference steps is 0. Run 'set_timesteps' after creating the scheduler.");
         // }
-        // std::cout << "_step_index before _init_step_index: " << _step_index << std::endl;
-        // if (_step_index == -1) {
-        //     _init_step_index(timestep);
-        // }
-        // std::cout << "_step_index after _init_step_index: " << _step_index << std::endl;
-
-        // std::cout << "1. get previous step value\n";
 
         // 1. get previous step value
         int prev_step_index = _step_index + 1;
         int prev_timestep = (prev_step_index < timesteps.size()) ? timesteps[prev_step_index] : timestep;
-        // std::cout << "timesteps.size(): "<< timesteps.size() << ", timesteps[prev_step_index]: " << timesteps[prev_step_index]<<  "\n";
-        // std::cout << "_step_index: " << _step_index << std::endl;
-
-        // std::cout << "2. compute alphas, betas\n";
 
         // 2. compute alphas, betas
         float alpha_prod_t = alphas_cumprod[timestep];
         float alpha_prod_t_prev = (prev_timestep >= 0) ? alphas_cumprod[prev_timestep] : final_alpha_cumprod;
-        // std::cout << "timestep: " << timestep << ", prev_timestep: " << prev_timestep << ", final_alpha_cumprod: " << final_alpha_cumprod << "\n";
 
         float beta_prod_t = 1 - alpha_prod_t;
         float beta_prod_t_prev = 1 - alpha_prod_t_prev;
-
-        // std::cout << "alpha_prod_t: " << alpha_prod_t << ", alpha_prod_t_prev: " << alpha_prod_t_prev << "\n";
-        // std::cout << "beta_prod_t: " << beta_prod_t << ", beta_prod_t_prev: " << beta_prod_t_prev << "\n";
-        
-        // std::cout << "3. Get scalings for boundary conditions\n";
 
         // 3. Get scalings for boundary conditions
         std::pair c_pair = get_scalings_for_boundary_condition_discrete(timestep);
         float c_skip = c_pair.first;
         float c_out = c_pair.second; 
-        // std::cout << "c_skip: " << c_skip << ", c_out: " << c_out << "\n";
-
-        // std::cout << "4. Compute the predicted original sample\n";
 
         // 4. Compute the predicted original sample x_0 based on the model parameterization
         // default "epsilon": noise-prediction
@@ -390,14 +310,6 @@ public:
             }
         }
      
-        // std::cout << "predicted_original_sample: \n"; 
-        // for (std::size_t i = 0; i < 5; ++i) {
-        //     std::cout << predicted_original_sample[i] << ", ";
-        // }        
-        // std::cout << "\n"; 
-
-        // std::cout << "5. Clip or threshold predicted x_0\n";
-
         // 5. Clip or threshold "predicted x_0"
         if (thresholding) {
             predicted_original_sample = _threshold_sample(predicted_original_sample);
@@ -407,33 +319,16 @@ public:
             }
         }
 
-        // std::cout << "predicted_original_sample after clip: ";
-        // for (std::size_t i = 0; i < 5; ++i) {
-        //     std::cout << predicted_original_sample[i] << ", ";
-        // }        
-        // std::cout << "\n"; 
-
-        // std::cout << "6. Denoise model output using boundary conditions\n";
-
         // 6. Denoise model output using boundary conditions
         std::vector<float> denoised(predicted_original_sample.size());
         for (std::size_t i = 0; i < predicted_original_sample.size(); ++i) {
             denoised[i] = c_out * predicted_original_sample[i] + c_skip * sample[i];
         }
 
-        // std::cout << "denoised: ";
-        // for (std::size_t i = 0; i < 5; ++i) {
-        //     std::cout << denoised[i] << ", ";
-        // }    
-        // std::cout << "\n"; 
-
-        // std::cout << "7. Sample and inject noise\n";
-
         // 7. Sample and inject noise z ~ N(0, I) for MultiStep Inference
         // Noise is not used on the final timestep of the timestep schedule.
         // This also means that noise is not used for one-step sampling.
         std::vector<float> prev_sample;
-        // std::cout << "_step_index: " << _step_index << ", num_inference_steps_: " << num_inference_steps_ << "\n";
         if (_step_index != num_inference_steps_ - 1) {
             
             std::vector<float> noise;
@@ -444,23 +339,8 @@ public:
                 noise = read_randn_function(file_path);
             } else {
                 noise = randn_function(model_output.size(), seed);
-                // std::cout << "randn_function: " << _step_index << "\n";
             }
 
-            // read noise for lcm_scheduler.cpp
-
-            // std::vector<float> noise;
-            // if (_step_index == 0) {
-            //     noise = { 1.5410, -0.2934, -2.1788,  0.5684 };
-            // } else {
-            //     noise = { -1.0845, -1.3986,  0.4033,  0.8380 };
-            // }
-
-            // std::cout << "randn noise:";
-            // for (std::size_t i = 0; i < model_output.size(); ++i) {
-            //     std::cout << noise[i] << ", ";
-            // }
-            // std::cout << "\n";
             for (std::size_t i = 0; i < model_output.size(); ++i) {
                 prev_sample.push_back(sqrt(alpha_prod_t_prev) * denoised[i] + sqrt(beta_prod_t_prev) * noise[i]);
             }
@@ -471,9 +351,8 @@ public:
 
         // upon completion increase step index by one
         _step_index += 1;
-        // std::cout << "finished step()\n";
 
-        return LCMSchedulerOutput(prev_sample, denoised);
+        return std::make_tuple(prev_sample, denoised);
     }
 
 private:
