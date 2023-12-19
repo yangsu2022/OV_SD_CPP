@@ -80,8 +80,7 @@ def convert_encoder(text_encoder: torch.nn.Module, ir_path: Path):
                 (-1, 77),
             ],
         )
-    # ov.save_model(ov_model, ir_path)
-    ov.save_model(ov_model, ir_path,compress_to_fp16=False)
+    ov.save_model(ov_model, ir_path,compress_to_fp16=True)
         
     del ov_model
     cleanup_torchscript_cache()
@@ -108,8 +107,8 @@ def convert_unet(unet: torch.nn.Module, ir_path: Path):
     unet.eval()
     with torch.no_grad():
         ov_model = ov.convert_model(unet, example_input=dummy_inputs)
-    # ov.save_model(ov_model, ir_path)
-    ov.save_model(ov_model, ir_path,compress_to_fp16=False)
+
+    ov.save_model(ov_model, ir_path,compress_to_fp16=True)
         
     del ov_model
     cleanup_torchscript_cache()
@@ -142,8 +141,8 @@ def convert_vae_decoder(vae: torch.nn.Module, ir_path: Path):
     vae_decoder.eval()
     with torch.no_grad():
         ov_model = ov.convert_model(vae_decoder, example_input=latents)
-    # ov.save_model(ov_model, ir_path)
-    ov.save_model(ov_model, ir_path,compress_to_fp16=False)
+    
+    ov.save_model(ov_model, ir_path,compress_to_fp16=True)
         
     del ov_model
     cleanup_torchscript_cache()
