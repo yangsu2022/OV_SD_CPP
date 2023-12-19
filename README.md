@@ -27,16 +27,26 @@ Notice: Use Intel sample [writeOutputBmp function](https://github.com/openvinoto
     conda create -n SD-CPP python==3.10
     pip install -r requirements.txt
     ```
-2. Download a huggingface SD v1.5 model like [runwayml/stable-diffusion-v1-5](https://huggingface.co/runwayml/stable-diffusion-v1-5), here another model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) is used to test for the lora enabling. Ref to the official website for [model downloading](https://huggingface.co/docs/hub/models-downloading).
-
-3. Model conversion from PyTorch model to OpenVINO IR via [optimum-intel](https://github.com/huggingface/optimum-intel). Please use  the script convert_model.py to convert the model into `FP16_static` or `FP16_dyn`, which will be saved into the SD folder.  
+2. Download a huggingface SD v1.5 model like [runwayml/stable-diffusion-v1-5](https://huggingface.co/runwayml/stable-diffusion-v1-5), here another model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) is used to test for the lora enabling. Ref to the official website for [model downloading](https://huggingface.co/docs/hub/models-downloading). Here, you could also use the api to download model with model_id(like "runwayml/stable-diffusion-v1-5" for config "-sd").
     ```shell
     cd scripts
-    python -m convert_model.py -b 1 -t FP16 -sd Path_to_your_SD_model
-    python -m convert_model.py -b 1 -t FP16 -sd Path_to_your_SD_model -dyn
+    python -m convert_sd_model.py -b 1 -t FP16 -sd runwayml/stable-diffusion-v1-5
+    ```
+
+3. Model conversion from PyTorch model to OpenVINO IR via [optimum-intel](https://github.com/huggingface/optimum-intel). Please use the script convert_sd_model.py to convert the model into `FP16_static` or `FP16_dyn`, which will be saved into the SD folder.  
+    ```shell
+    cd scripts
+    python -m convert_sd_model.py -b 1 -t FP16 -sd Path_to_your_SD_model
+    python -m convert_sd_model.py -b 1 -t FP16 -sd Path_to_your_SD_model -dyn
     ```
     Notice: Now the pipeline support batch size = 1 only, ie. static model (1,3,512,512)
 
+#### LCM model:
+Download model `SimianLuo/LCM_Dreamshaper_v7` and convert to openvino FP16_dyn IR `../models/lcm/dreamshaper_v7/FP16_dyn/` via one script `convert_lcm_model.py`, which is based on the openvino notebook [263-latent-consistency-models-image-generation](https://github.com/openvinotoolkit/openvino_notebooks/blob/main/notebooks/263-latent-consistency-models-image-generation/263-latent-consistency-models-image-generation.ipynb). For proxy issue, if failed to use the script to download model, try the `huggingface-cli` tool with `hf-mirror`.
+    ```shell
+    cd scripts
+    python -m convert_lcm_model.py
+    ```
 #### Lora enabling with safetensors
 
 Refer [this blog for python pipeline](https://blog.openvino.ai/blog-posts/enable-lora-weights-with-stable-diffusion-controlnet-pipeline), the safetensor model is loaded via [src/safetensors.h](https://github.com/hsnyder/safetensors.h). The layer name and weight are modified with `Eigen Lib` and inserted into the SD model with `ov::pass::MatcherPass` in the file `src/lora_cpp.hpp`. 
@@ -86,6 +96,7 @@ Usage:
 * `--height arg`        Height of output image (default: 512)
 * `--width arg`         Width of output image (default: 512)
 * `--log arg`           Generate logging into log.txt for debug
+* `--lcm arg`           Use LCM diffusion pipelien with LCM scheduler
 * `-c, --useCache`      Use model caching
 * `-e, --useOVExtension`Use OpenVINO extension for tokenizer
 * `-r, --readNPLatent`  Read numpy generated latents from file
@@ -103,16 +114,18 @@ Negative prompt: (empty, here couldn't use OV tokenizer, check the issues for de
 
 Read the numpy latent instead of C++ std lib for the alignment with Python pipeline 
 
-* Generate image without lora ` ./SD-generate -r -l "" `
+* Using SDv1.5 model to generate image without lora ` ./SD-generate -r -l "" `
 
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/66047d66-08a3-4272-abdc-7999d752eea0)
 
-* Generate image with soulcard lora ` ./SD-generate -r `
+* Using SDv1.5 model to generate image with soulcard lora ` ./SD-generate -r `
 
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
-* Generate the debug logging into log.txt: ` ./SD-generate --log`
-* Generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/sd/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
+* Using LCM model and LCM scheduler to generate image without lora ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"  `
+
+* Using SDv1.5 model to generate the debug logging into log.txt: ` ./SD-generate --log`
+* Using SDv1.5 model to generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/sd/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
 
 ![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/9bd58b64-6688-417e-b435-c0991247b97b)
 
