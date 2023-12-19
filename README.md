@@ -98,7 +98,7 @@ Usage:
 * `--height arg`        Height of output image (default: 512)
 * `--width arg`         Width of output image (default: 512)
 * `--log arg`           Generate logging into log.txt for debug
-* `--lcm arg`           Use LCM diffusion pipelien with LCM scheduler
+* `--lcm arg`           Use LCM diffusion pipeline with LCM scheduler
 * `-c, --useCache`      Use model caching
 * `-e, --useOVExtension`Use OpenVINO extension for tokenizer
 * `-r, --readNPLatent`  Read numpy generated latents from file
@@ -124,7 +124,10 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
-* Using LCM model and LCM scheduler to generate image without lora ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"  `
+* Using LCM model and LCM scheduler to generate image without lora (reading noise from files)
+ ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
+
+![lcm_read_noise](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/fb9e1c1b-ae60-4f9c-8aad-79951bbf3f8b)
 
 * Using SDv1.5 model to generate the debug logging into log.txt: ` ./SD-generate --log`
 * Using SDv1.5 model to generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/sd/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
