@@ -27,6 +27,8 @@ Notice: Use Intel sample [writeOutputBmp function](https://github.com/openvinoto
     conda create -n SD-CPP python==3.10
     pip install -r requirements.txt
     ```
+    **Notice: tested with transformers=4.35.2 and 4.34.1. If has issues with converting model, could downgrade the pkg.
+    
 2. Download a huggingface SD v1.5 model like [runwayml/stable-diffusion-v1-5](https://huggingface.co/runwayml/stable-diffusion-v1-5), here another model [dreamlike-anime-1.0](https://huggingface.co/dreamlike-art/dreamlike-anime-1.0) is used to test for the lora enabling. Ref to the official website for [model downloading](https://huggingface.co/docs/hub/models-downloading). Here, you could also use the api to download model with model_id(like "runwayml/stable-diffusion-v1-5" for config "-sd").
     ```shell
     cd scripts
@@ -39,7 +41,7 @@ Notice: Use Intel sample [writeOutputBmp function](https://github.com/openvinoto
     python -m convert_sd_model.py -b 1 -t FP16 -sd Path_to_your_SD_model
     python -m convert_sd_model.py -b 1 -t FP16 -sd Path_to_your_SD_model -dyn
     ```
-    Notice: Now the pipeline support batch size = 1 only, ie. static model (1,3,512,512)
+    **Notice: Now the pipeline support batch size = 1 only, ie. static model (1,3,512,512)
 
 #### LCM model:
 Download model `SimianLuo/LCM_Dreamshaper_v7` and convert to openvino FP16_dyn IR `../models/lcm/dreamshaper_v7/FP16_dyn/` via one script `convert_lcm_model.py`, which is based on the openvino notebook [263-latent-consistency-models-image-generation](https://github.com/openvinotoolkit/openvino_notebooks/blob/main/notebooks/263-latent-consistency-models-image-generation/263-latent-consistency-models-image-generation.ipynb). For proxy issue, if failed to use the script to download model, try the `huggingface-cli` tool with `hf-mirror`.
