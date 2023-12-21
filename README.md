@@ -48,7 +48,10 @@ Download model `SimianLuo/LCM_Dreamshaper_v7` and convert to openvino FP16_dyn I
     ```shell
     cd scripts
     python -m convert_lcm_model.py
+    python -m convert_lcm_model_int8.py
     ```
+The Unet is much large than other 2 models, we could optimize via nncf to decrease about half time of Unet inference. For LCM int8 Unet IR model, could use `convert_lcm_model_int8.py` script, will save the Unet IR in the path `../models/lcm/dreamshaper_v7/INT8_dyn/unet/`. Please copy the `FP16_dyn`'s `text_encoder` and `vae_decoder` folder into `INT8_dyn` folder.
+
 #### Lora enabling with safetensors
 
 Refer [this blog for python pipeline](https://blog.openvino.ai/blog-posts/enable-lora-weights-with-stable-diffusion-controlnet-pipeline), the safetensor model is loaded via [src/safetensors.h](https://github.com/hsnyder/safetensors.h). The layer name and weight are modified with `Eigen Lib` and inserted into the SD model with `ov::pass::MatcherPass` in the file `src/lora_cpp.hpp`. 
@@ -125,9 +128,12 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
 * Using LCM model and LCM scheduler to generate image without lora (reading noise from files)
- ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
+ ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
 
 ![lcm_read_noise](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/fb9e1c1b-ae60-4f9c-8aad-79951bbf3f8b)
+
+* Using LCM int8 model and LCM scheduler to generate image without lora (reading noise from files)
+ ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t INT8_dyn -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
 
 * Using SDv1.5 model to generate the debug logging into log.txt: ` ./SD-generate --log`
 * Using SDv1.5 model to generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/sd/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
