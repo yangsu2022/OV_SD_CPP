@@ -431,7 +431,7 @@ def collect_calibration_data(lcm_pipeline: OVLatentConsistencyModelPipeline, sub
     original_unet = lcm_pipeline.unet
     lcm_pipeline.unet = CompiledModelDecorator(original_unet, prob=0.3)
 
-    dataset = datasets.load_dataset("laion/laion-coco", split="train", streaming=True).shuffle(seed=42)
+    dataset = datasets.load_dataset("laion/laion2B-en-aesthetic", split="train", streaming=True).shuffle(seed=42)
     lcm_pipeline.set_progress_bar_config(disable=True)
     safety_checker = lcm_pipeline.safety_checker
     lcm_pipeline.safety_checker = None

@@ -50,7 +50,7 @@ Download model `SimianLuo/LCM_Dreamshaper_v7` and convert to openvino FP16_dyn I
     python -m convert_lcm_model.py
     python -m convert_lcm_model_int8.py
     ```
-The Unet is much large than other 2 models, we could optimize via nncf to decrease about half time of Unet inference. For LCM int8 Unet IR model, could use `convert_lcm_model_int8.py` script, will save the Unet IR in the path `../models/lcm/dreamshaper_v7/INT8_dyn/unet/`. Please copy the `FP16_dyn`'s `text_encoder` and `vae_decoder` folder into `INT8_dyn` folder.
+The Unet is much large than other 2 models, we could optimize via nncf to decrease about half time of Unet inference. For LCM int8 Unet IR model, could use `convert_lcm_model_int8.py` script, will save the Unet IR in the path `../models/lcm/dreamshaper_v7/INT8_dyn/unet/`. Please copy the `FP16_dyn`'s `text_encoder` and `vae_decoder` folder into `INT8_dyn` folder. The script is based on the openvino notebook [263-latent-consistency-models-image-generation](https://github.com/openvinotoolkit/openvino_notebooks/blob/main/notebooks/263-latent-consistency-models-image-generation/263-latent-consistency-models-image-generation.ipynb).
 
 #### Lora enabling with safetensors
 
