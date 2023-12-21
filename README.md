@@ -135,6 +135,8 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 * Using LCM int8 model and LCM scheduler to generate image without lora (reading noise from files)
  ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t INT8_dyn -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
 
+![lcm_int8](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/5e1ce14c-e0f5-4870-bf4f-e86a30acfe81)
+
 * Using SDv1.5 model to generate the debug logging into log.txt: ` ./SD-generate --log`
 * Using SDv1.5 model to generate different size image with dynamic model(C++ lib generated latent): ` ./SD-generate -m Your_Own_Path/sd/dreamlike-anime-1.0 -l '' -t FP16_dyn --height 448 --width 704 `
 
