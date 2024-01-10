@@ -994,7 +994,7 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
         std::cout << "image No." << n << ", seed = " << seed_vec[n] << std::endl;
 
         std::vector<float> latent_vector_1d;
-        if (read_latent) {
+        if (read_latent && (num==1) ) {
             if (use_lcm_scheduler == false) {
                 // SD: read np generated latents with defaut seed 42 
                 std::string np_latent_path = "../scripts/np_latents_512x512.txt"; 
