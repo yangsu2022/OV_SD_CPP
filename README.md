@@ -132,6 +132,11 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 
 ![lcm_read_noise](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/fb9e1c1b-ae60-4f9c-8aad-79951bbf3f8b)
 
+* Using LCM model and LCM scheduler to generate 4 images with different seed (only reading noise from files in scheduler step function)
+`./SD-generate -m ../models/lcm/dreamshaper_v7 -t FP16_dyn --step 4 -p "a beautiful pink unicorn"  --lcm -r --num 4`
+![Screenshot 2024-01-10 114144](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/3c342404-a0c1-4b28-905c-fa9a3e92c79d)
+
+
 * Using LCM int8 model and LCM scheduler to generate image without lora (reading noise from files)
  ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t INT8_dyn -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
 
