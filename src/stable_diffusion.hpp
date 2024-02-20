@@ -26,8 +26,8 @@
 #include <utils.hpp>
 #include <vector>
 
-#include "lms_scheduler.hpp"
 #include "lcm_scheduler.hpp"
+#include "lms_scheduler.hpp"
 #include "logger.hpp"
 #include "lora_cpp.hpp"
 #include "process_bar.hpp"
@@ -50,7 +50,7 @@ std::vector<float> std_randn_function(uint32_t seed, uint32_t h, uint32_t w) {
 
 std::vector<float> py_randn_function(const std::string& latent_path) {
     std::ifstream rand_file;
-    rand_file.open(latent_path.data()); // 
+    rand_file.open(latent_path.data());  //
     std::vector<std::string> string_data;
     if (rand_file.is_open()) {
         std::string word;
@@ -81,10 +81,6 @@ std::vector<uint8_t> vae_decoder_function(ov::CompiledModel& decoder_compiled_mo
 
     const ov::element::Type type = decoder_input_port.get_element_type();
 
-    float coeffs_const{1 / 0.18215};
-    std::for_each(sample.begin(), sample.end(), [coeffs_const](float& i) {
-        i *= coeffs_const;
-    });
     ov::Shape sample_shape = {1, 4, h / 8, w / 8};
     ov::Tensor decoder_input_tensor(type, sample_shape, sample.data());
 
@@ -131,14 +127,13 @@ std::vector<uint8_t> vae_decoder_function(ov::CompiledModel& decoder_compiled_mo
     return output_vec;
 }
 
-
 std::vector<float> lcm_unet_infer_function(ov::CompiledModel& unet_model,
-                                       std::vector<float>& vector_t,
-                                       std::vector<float>& latent_input_1d,
-                                       std::vector<float>& text_embedding_1d,
-                                       std::vector<float>& w_embedding,
-                                       uint32_t u_h,
-                                       uint32_t u_w) {
+                                           std::vector<float>& vector_t,
+                                           std::vector<float>& latent_input_1d,
+                                           std::vector<float>& text_embedding_1d,
+                                           std::vector<float>& w_embedding,
+                                           uint32_t u_h,
+                                           uint32_t u_w) {
     auto t0 = std::chrono::steady_clock::now();
 
     ov::InferRequest unet_infer_request = unet_model.create_infer_request();
@@ -375,21 +370,20 @@ std::vector<float> diffusion_function(ov::CompiledModel& unet_compiled_model,
 }
 
 std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model,
-                                      uint32_t seed,
-                                      int32_t step,
-                                      uint32_t d_h,
-                                      uint32_t d_w,
-                                      std::vector<float>& latent_vector_1d,
-                                      std::vector<float>& text_embeddings_2_77_768,
-                                      bool read_noise) {
-    
+                                          uint32_t seed,
+                                          int32_t step,
+                                          uint32_t d_h,
+                                          uint32_t d_w,
+                                          std::vector<float>& latent_vector_1d,
+                                          std::vector<float>& text_embeddings_2_77_768,
+                                          bool read_noise) {
     LCMScheduler lcmscheduler(1000, 0.00085, 0.012, read_noise);
 
     // 3. Prepare timesteps
     std::vector<int> lcm_timesteps = lcmscheduler.set_timesteps(step);
     logger.log_vector(LogLevel::DEBUG, "lcm_timesteps: ", lcm_timesteps, 0, lcm_timesteps.size());
 
-    // 4. Prepare latent variable: 
+    // 4. Prepare latent variable:
     // ref to def prepare_latents, here get latent_vector_1d, no need for scaling(init_noise_sigma=1)
     // 5. Get Guidance Scale Embedding
     float guidance_scale = 8.0;
@@ -433,8 +427,13 @@ std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model
 
         auto start = std::chrono::steady_clock::now();
 
-        std::vector<float> noise_pred_1d =
-            lcm_unet_infer_function(unet_compiled_model, t, latent_vector_1d, text_embeddings_1_77_768, w_embedding, d_h, d_w);
+        std::vector<float> noise_pred_1d = lcm_unet_infer_function(unet_compiled_model,
+                                                                   t,
+                                                                   latent_vector_1d,
+                                                                   text_embeddings_1_77_768,
+                                                                   w_embedding,
+                                                                   d_h,
+                                                                   d_w);
 
         auto end = std::chrono::steady_clock::now();
 
@@ -446,12 +445,12 @@ std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model
                          noise_pred_1d.size());
 
         auto start_post = std::chrono::steady_clock::now();
-        
-        std::tie(latent_vector_1d, denoised) = lcmscheduler.step_func(noise_pred_1d, lcm_timesteps[i], latent_vector_1d, seed);
+
+        std::tie(latent_vector_1d, denoised) =
+            lcmscheduler.step_func(noise_pred_1d, lcm_timesteps[i], latent_vector_1d, seed);
 
         logger.log_vector(LogLevel::DEBUG, "Debug-latent_vector_1d_new: ", latent_vector_1d, 0, 5);
         logger.log_vector(LogLevel::DEBUG, "Debug-denoised: ", denoised, 0, 5);
-
     }
     bar.finish();
     return denoised;
@@ -645,8 +644,7 @@ std::vector<std::vector<int32_t>> tokenizer_infer_function(ov::CompiledModel& to
     return std::vector<std::vector<int32_t>>{input_ids};
 }
 
-std::vector<float> clip_infer_function_i64(ov::CompiledModel& prompt_model, std::vector<int32_t> current_tokens)
-{   
+std::vector<float> clip_infer_function_i64(ov::CompiledModel& prompt_model, std::vector<int32_t> current_tokens) {
     std::vector<int64_t> lcm_current_tokens(current_tokens.begin(), current_tokens.end());
     ov::InferRequest infer_request = prompt_model.create_infer_request();
     auto clip_input_port = prompt_model.input();
@@ -674,11 +672,10 @@ std::vector<float> clip_infer_function_i64(ov::CompiledModel& prompt_model, std:
     return text_embeddings;
 }
 
-std::vector<float> clip_infer_function_i32(ov::CompiledModel& prompt_model, std::vector<int32_t> current_tokens)
-{   
+std::vector<float> clip_infer_function_i32(ov::CompiledModel& prompt_model, std::vector<int32_t> current_tokens) {
     ov::InferRequest infer_request = prompt_model.create_infer_request();
     auto clip_input_port = prompt_model.input();
-    auto shape = clip_input_port.get_partial_shape(); 
+    auto shape = clip_input_port.get_partial_shape();
     logger.log_value(LogLevel::DEBUG, "clip_input_port.get_partial_shape(): ", shape);
     ov::Shape clip_input_shape = {1, current_tokens.size()};
     ov::Tensor text_embeddings_input_tensor(clip_input_port.get_element_type(),
@@ -833,6 +830,7 @@ std::vector<float> prompt_function(ov::CompiledModel& text_encoder_compiled_mode
 }
 
 std::vector<ov::CompiledModel> SD_init(const std::string& model_path,
+                                       const std::string& TAE_model_path,
                                        const std::string& device,
                                        const std::string& type,
                                        const std::map<std::string, float>& lora_models,
@@ -850,8 +848,13 @@ std::vector<ov::CompiledModel> SD_init(const std::string& model_path,
         core.read_model((model_path + "/" + type + "/text_encoder/openvino_model.xml").c_str());
     std::shared_ptr<ov::Model> unet_model =
         core.read_model((model_path + "/" + type + "/unet/openvino_model.xml").c_str());
-    std::shared_ptr<ov::Model> decoder_model =
-        core.read_model((model_path + "/" + type + "/vae_decoder/openvino_model.xml").c_str());
+
+    std::shared_ptr<ov::Model> decoder_model;
+    if (TAE_model_path == "") {
+        decoder_model = core.read_model((model_path + "/" + type + "/vae_decoder/openvino_model.xml").c_str());
+    } else {
+        decoder_model = core.read_model(TAE_model_path);
+    }
 
     SD_compiled_models = load_lora_weights_cpp(core, text_encoder_model, unet_model, device, lora_models);
 
@@ -891,6 +894,7 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
                       const std::string& model_path = std::string{},
                       const std::string& type = std::string{},
                       const std::string& lora_path = std::string{},
+                      const std::string& TAE_path = std::string{},
                       float alpha = 0.75,
                       bool use_ov_extension = false,
                       bool read_latent = false) {
@@ -908,6 +912,7 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
     logger.log_value(LogLevel::INFO, "model_path: ", model_path);
     logger.log_value(LogLevel::INFO, "type: ", type);
     logger.log_value(LogLevel::INFO, "lora_path: ", lora_path);
+    logger.log_value(LogLevel::INFO, "TAE_path: ", TAE_path);
     logger.log_value(LogLevel::INFO, "use_ov_extension: ", use_ov_extension);
     logger.log_value(LogLevel::INFO, "read_latent: ", read_latent);
     logger.log_value(LogLevel::INFO, "use_logger: ", use_logger);
@@ -927,6 +932,7 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
     std::cout << "model_path: " << model_path << std::endl;
     std::cout << "type: " << type << std::endl;
     std::cout << "lora_path: " << lora_path << std::endl;
+    std::cout << "TAE_path: " << TAE_path << std::endl;
     std::cout << "alpha: " << alpha << std::endl;
     std::cout << std::boolalpha << "use_ov_extension: " << use_ov_extension << std::endl;
     std::cout << std::boolalpha << "read_latent: " << read_latent << std::endl;
@@ -942,7 +948,7 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
 
     auto start_SDinit = std::chrono::steady_clock::now();
     std::vector<ov::CompiledModel> SD_models =
-        SD_init(model_path, device, type, lora_models, use_ov_extension, use_cache);
+        SD_init(model_path, TAE_path, device, type, lora_models, use_ov_extension, use_cache);
     auto end_SDinit = std::chrono::steady_clock::now();
     auto duration_SDinit = std::chrono::duration_cast<std::chrono::duration<float>>(end_SDinit - start_SDinit);
 
@@ -994,14 +1000,14 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
         std::cout << "image No." << n << ", seed = " << seed_vec[n] << std::endl;
 
         std::vector<float> latent_vector_1d;
-        if (read_latent && (num==1) ) {
+        if (read_latent && (num == 1)) {
             if (use_lcm_scheduler == false) {
-                // SD: read np generated latents with defaut seed 42 
-                std::string np_latent_path = "../scripts/np_latents_512x512.txt"; 
+                // SD: read np generated latents with defaut seed 42
+                std::string np_latent_path = "../scripts/np_latents_512x512.txt";
                 latent_vector_1d = py_randn_function(np_latent_path);
             } else {
                 // LCM:
-                std::string torch_latent_path = "../scripts/torch_latents_512x512.txt"; 
+                std::string torch_latent_path = "../scripts/torch_latents_512x512.txt";
                 latent_vector_1d = py_randn_function(torch_latent_path);
             }
         } else {
@@ -1013,12 +1019,19 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
 
         auto start_diffusion = std::chrono::steady_clock::now();
         if (use_lcm_scheduler == false) {
-            sample = diffusion_function(SD_models[1], seed_vec[n], step, height, width, latent_vector_1d, text_embeddings);
+            sample =
+                diffusion_function(SD_models[1], seed_vec[n], step, height, width, latent_vector_1d, text_embeddings);
         } else {
             // here, output of lcm_diffusion_function is denoised
-            sample =
-                lcm_diffusion_function(SD_models[1], seed_vec[n], step, height, width, latent_vector_1d, text_embeddings, read_latent);
-        } 
+            sample = lcm_diffusion_function(SD_models[1],
+                                            seed_vec[n],
+                                            step,
+                                            height,
+                                            width,
+                                            latent_vector_1d,
+                                            text_embeddings,
+                                            read_latent);
+        }
         auto end_diffusion = std::chrono::steady_clock::now();
         auto duration_diffusion =
             std::chrono::duration_cast<std::chrono::duration<float>>(end_diffusion - start_diffusion);
@@ -1028,6 +1041,13 @@ void stable_diffusion(const std::string& positive_prompt = std::string{},
         logger.log_string(LogLevel::INFO, "----------------[decode]------------------");
         std::cout << "----------------[decode]------------------" << std::endl;
         auto start_decode = std::chrono::steady_clock::now();
+
+        if (TAE_path == "") {
+            float coeffs_const{1 / 0.18215};
+            std::for_each(sample.begin(), sample.end(), [coeffs_const](float& i) {
+                i *= coeffs_const;
+            });
+        }
         auto output_decoder = vae_decoder_function(SD_models[2], sample, height, width);
         auto end_decode = std::chrono::steady_clock::now();
         auto duration_decode = std::chrono::duration_cast<std::chrono::duration<float>>(end_decode - start_decode);

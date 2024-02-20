@@ -18,21 +18,21 @@ int32_t main(int32_t argc, char* argv[]) {
             " "))("d,device", "AUTO, CPU, or GPU", cxxopts::value<std::string>()->default_value("CPU"))(
         "step",
         "Number of diffusion step",
-        cxxopts::value<size_t>()->default_value("20"))(
-        "s,seed",
-        "Number of random seed to generate latent for one image output",
+        cxxopts::value<size_t>()->default_value("20"))("s,seed",
+                                                       "Number of random seed to generate latent for one image output",
+                                                       cxxopts::value<size_t>()->default_value("42"))(
+        "num",
+        "Number of image output",
         cxxopts::value<size_t>()->default_value(
-            "42"))("num", "Number of image output", cxxopts::value<size_t>()->default_value("1"))(
-        "height",
-        "height",
+            "1"))("height", "height", cxxopts::value<size_t>()->default_value("512"))(
+        "width",
+        "width",
         cxxopts::value<size_t>()->default_value(
-            "512"))("width", "width", cxxopts::value<size_t>()->default_value("512"))(
-        "log",
-        "generate logging into log.txt for debug",
-        cxxopts::value<bool>()->default_value( "false"))
-        ("c,useCache", "use model caching", cxxopts::value<bool>()->default_value("false"))
-        ("lcm", "use lcm scheduler", cxxopts::value<bool>()->default_value("false"))
-        (
+            "512"))("log", "generate logging into log.txt for debug", cxxopts::value<bool>()->default_value("false"))(
+        "c,useCache",
+        "use model caching",
+        cxxopts::value<bool>()->default_value(
+            "false"))("lcm", "use lcm scheduler", cxxopts::value<bool>()->default_value("false"))(
         "e,useOVExtension",
         "use OpenVINO extension for tokenizer",
         cxxopts::value<bool>()->default_value("false"))("r,readNPLatent",
@@ -47,7 +47,10 @@ int32_t main(int32_t argc, char* argv[]) {
         "l,loraPath",
         "Specify path of lora file. (*.safetensors).",
         cxxopts::value<std::string>()->default_value(
-            ""))("a,alpha", "alpha for lora", cxxopts::value<float>()->default_value("0.75"))("h,help", "Print usage");
+            ""))("a,alpha", "alpha for lora", cxxopts::value<float>()->default_value("0.75"))("h,help", "Print usage")(
+        "TAEModelPath",
+        "Specify path of TAESD VAE decoder model IR",
+        cxxopts::value<std::string>()->default_value(""));
     cxxopts::ParseResult result;
 
     try {
@@ -79,6 +82,7 @@ int32_t main(int32_t argc, char* argv[]) {
     const std::string model_path = result["modelPath"].as<std::string>();
     const std::string type = result["type"].as<std::string>();
     const std::string lora_path = result["loraPath"].as<std::string>();
+    const std::string TAE_path = result["TAEModelPath"].as<std::string>();
     float alpha = result["alpha"].as<float>();
     if ((negative_prompt == " ") && (use_OV_extension == true)) {
         std::cout << "Please utilize the OpenVINO extension tokenizer without an empty negative prompt.\n";
@@ -127,6 +131,7 @@ int32_t main(int32_t argc, char* argv[]) {
                      model_path,
                      type,
                      lora_path,
+                     TAE_path,
                      alpha,
                      use_OV_extension,
                      read_NP_latent);
