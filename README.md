@@ -55,26 +55,28 @@ Notice: Use Intel sample [writeOutputBmp function](https://github.com/openvinoto
 
 #### LCM model:
 Download model `SimianLuo/LCM_Dreamshaper_v7` and convert to openvino FP16_dyn IR `../models/lcm/dreamshaper_v7/FP16_dyn/` via one script `convert_lcm_model.py`, which is based on the openvino notebook [263-latent-consistency-models-image-generation](https://github.com/openvinotoolkit/openvino_notebooks/blob/main/notebooks/263-latent-consistency-models-image-generation/263-latent-consistency-models-image-generation.ipynb). For proxy issue, if failed to use the script to download model, try the `huggingface-cli` tool with `hf-mirror`.
-    ```shell
-    cd scripts
-    python -m convert_lcm_model.py
-    python -m convert_lcm_model_int8.py
-    ```
+
+```shell
+cd scripts
+python -m convert_lcm_model.py
+python -m convert_lcm_model_int8.py
+```
 The Unet is much large than other 2 models, we could optimize via nncf to decrease about half time of Unet inference. For LCM int8 Unet IR model, could use `convert_lcm_model_int8.py` script, will save the Unet IR in the path `../models/lcm/dreamshaper_v7/INT8_dyn/unet/`. Please copy the `FP16_dyn`'s `text_encoder` and `vae_decoder` folder into `INT8_dyn` folder. The script is based on the openvino notebook [263-latent-consistency-models-image-generation](https://github.com/openvinotoolkit/openvino_notebooks/blob/main/notebooks/263-latent-consistency-models-image-generation/263-latent-consistency-models-image-generation.ipynb).
 
 #### TAESD-OV model:
-Use the [Tiny AutoEncoder for Stable Diffusion(TAESD)(https://github.com/madebyollin/taesd?tab=readme-ov-file)] to accelerate SD/LCM decoder with (nearly) the same image accuracy. TAESD is a tiny, distilled version of Stable Diffusion's VAE. 
+Use the [Tiny AutoEncoder for Stable Diffusion(TAESD)](https://github.com/madebyollin/taesd?tab=readme-ov-file) to accelerate both SD/LCM decoder with (nearly) the same image accuracy. TAESD is a tiny, distilled version of Stable Diffusion's VAE. 
 Here we modify the HuggingFace [deinferno/taesd-openvino](https://hf-mirror.com/deinferno/taesd-openvino) python script to get the TAESD OpenVINO IR.
-    ```shell
-    cd scripts
-    conda create -n TAE-SD python==3.10 # Base on your SD-CPP env
-    pip install optimum-intel==1.11.1 openvino-dev # must downgrade optimum-intel
-    export HF_ENDPOINT=https://hf-mirror.com # this is for Linux, need modify in Windows Prompt terminal or use Git Bash terminal on Windows
-    python get_taesd_ov_model.py
-    ls ../models/sd/taesd-openvino/vae_decoder/openvino_model.xml -lh
-    ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 
-    ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 --TAEModelPath "../models/sd/taesd-openvino/vae_decoder/openvino_model.xml"
-    ```
+
+```shell
+cd scripts
+conda create -n TAE-SD python==3.10 # Base on your SD-CPP env
+pip install optimum-intel==1.11.1 openvino-dev # must downgrade optimum-intel
+export HF_ENDPOINT=https://hf-mirror.com # this is for Linux, need modify in Windows Prompt terminal or use Git Bash terminal on Windows
+python get_taesd_ov_model.py
+ls ../models/sd/taesd-openvino/vae_decoder/openvino_model.xml -lh
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 --TAEModelPath "../models/sd/taesd-openvino/vae_decoder/openvino_model.xml"
+``` 
 
 #### Lora enabling with safetensors
 
