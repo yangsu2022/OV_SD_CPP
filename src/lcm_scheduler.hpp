@@ -261,21 +261,17 @@ public:
     }
 
     // for torch.randn()
-    std::vector<float> randn_function(uint32_t size, uint32_t seed) {
+    std::vector<float> randn_function(uint32_t size, std::mt19937& gen, std::normal_distribution<float>& normal) {
         std::vector<float> noise(size);
-        {
-            std::mt19937 gen{static_cast<unsigned long>(seed)};
-            std::normal_distribution<float> normal{0.0f, 1.0f};
-            std::for_each(noise.begin(), noise.end(), [&](float& x) {
-                x = normal(gen);
-            });
-        }
+        std::for_each(noise.begin(), noise.end(), [&](float& x) {
+            x = normal(gen);
+        });
         return noise;
     }
-    
+
     std::tuple<std::vector<float>, std::vector<float>>
     step_func(const std::vector<float>& model_output, int timestep, 
-                            const std::vector<float>& sample, int seed) {
+                            const std::vector<float>& sample, std::mt19937& gen, std::normal_distribution<float>& normal) {
         // Predict the sample from the previous timestep by reversing the SDE. 
         // if (num_inference_steps == 0) {
         //     throw std::runtime_error("Number of inference steps is 0. Run 'set_timesteps' after creating the scheduler.");
@@ -338,7 +334,7 @@ public:
                 std::string file_path = "../scripts/torch_noise_step_" + std::to_string(_step_index) + ".txt"; 
                 noise = read_randn_function(file_path);
             } else {
-                noise = randn_function(model_output.size(), seed);
+                noise = randn_function(model_output.size(), gen, normal);
             }
 
             for (std::size_t i = 0; i < model_output.size(); ++i) {

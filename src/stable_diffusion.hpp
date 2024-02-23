@@ -395,6 +395,9 @@ std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model
     // std::vector<float> latent_vector_1d_new = latent_vector_1d;
     std::vector<float> denoised;
 
+    std::mt19937 gen{static_cast<unsigned long>(seed)};
+    std::normal_distribution<float> normal{0.0f, 1.0f};
+
     for (int32_t i = 0; i < step; i++) {
         bar.progress(i);
 
@@ -447,7 +450,7 @@ std::vector<float> lcm_diffusion_function(ov::CompiledModel& unet_compiled_model
         auto start_post = std::chrono::steady_clock::now();
 
         std::tie(latent_vector_1d, denoised) =
-            lcmscheduler.step_func(noise_pred_1d, lcm_timesteps[i], latent_vector_1d, seed);
+            lcmscheduler.step_func(noise_pred_1d, lcm_timesteps[i], latent_vector_1d, gen, normal);
 
         logger.log_vector(LogLevel::DEBUG, "Debug-latent_vector_1d_new: ", latent_vector_1d, 0, 5);
         logger.log_vector(LogLevel::DEBUG, "Debug-denoised: ", denoised, 0, 5);
