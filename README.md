@@ -74,8 +74,8 @@ pip install optimum-intel==1.11.1 openvino-dev # must downgrade optimum-intel
 export HF_ENDPOINT=https://hf-mirror.com # this is for Linux, need modify in Windows Prompt terminal or use Git Bash terminal on Windows
 python get_taesd_ov_model.py
 ls ../models/sd/taesd-openvino/vae_decoder/openvino_model.xml -lh
-./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 
-./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 --TAEModelPath "../models/sd/taesd-openvino/vae_decoder/openvino_model.xml"
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn  --lcm --step 4  -p "a beautiful pink unicorn" --num 4 
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn  --lcm --step 4  -p "a beautiful pink unicorn" --num 4 --TAEModelPath "../models/sd/taesd-openvino/vae_decoder/openvino_model.xml"
 ``` 
 
 #### Lora enabling with safetensors
