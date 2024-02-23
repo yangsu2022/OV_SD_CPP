@@ -154,15 +154,24 @@ Read the numpy latent instead of C++ std lib for the alignment with Python pipel
 
 ![image](https://github.com/intel-sandbox/OV_SD_CPP/assets/102195992/0f6e2e3e-74fe-4bd4-bb86-df17cb4bf3f8)
 
-* Using LCM model and LCM scheduler to generate image without lora (reading noise from files)
- ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
+* Using LCM model and LCM scheduler to generate image without lora (left: reading noise from files, right: C++ STD random)
+```shell
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn  --lcm --step 4  -p "a beautiful pink unicorn" -r
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn  --lcm --step 4  -p "a beautiful pink unicorn"
+```
+![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/51a217eb-9233-4666-b020-ab094ce4b42f)
 
-![lcm_read_noise](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/fb9e1c1b-ae60-4f9c-8aad-79951bbf3f8b)
+* Using LCM model and LCM scheduler to generate 4 images with different seed (use C++ STD random generation in scheduler step function)
+```shell
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 -p "a beautiful pink unicorn" --num 4
+```
+![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/286b984b-7f30-44c4-ab29-b2d82cc0601a)
 
-* Using LCM model and LCM scheduler to generate 4 images with different seed (only reading noise from files in scheduler step function)
-`./SD-generate -m ../models/lcm/dreamshaper_v7 -t FP16_dyn --step 4 -p "a beautiful pink unicorn"  --lcm -r --num 4`
-![Screenshot 2024-01-10 114144](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/3c342404-a0c1-4b28-905c-fa9a3e92c79d)
-
+* Using LCM model, TAE and LCM scheduler to generate 4 images with different seed (use C++ STD random generation in scheduler step function)
+```shell
+./SD-generate -m ../models/lcm/dreamshaper_v7/ -t FP16_dyn --lcm --step 4 -p "a beautiful pink unicorn" --num 4 --TAEModelPath "../models/sd/taesd-openvino/vae_decoder/openvino_model.xml"
+```
+![image](https://github.com/yangsu2022/OV_SD_CPP/assets/102195992/3b22aaf8-b245-418d-83bc-db352e48b299)
 
 * Using LCM int8 model and LCM scheduler to generate image without lora (reading noise from files)
  ` ./SD-generate -m ../models/lcm/dreamshaper_v7/ -t INT8_dyn -r -l "" --lcm --step 4 -p "a beautiful pink unicorn"`
